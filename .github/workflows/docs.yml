@@ -5,10 +5,10 @@ on:
     branches: [main]
     paths:
       - "docs/**"
-      - "tools/**"
+      - "scripts/mkdocs_readmes.py"
       - "mkdocs.yml"
       - "CONTRIBUTING.md"
-      - "Gx*/README.md"
+      - "src/*/README.md"
       - ".github/workflows/docs.yml"
   workflow_dispatch:
 

@@ -39,7 +39,7 @@ markdown_extensions:
 
 # Copia los README de cada extensión y CONTRIBUTING.md a docs/ y arma la sección Extensiones del menú
 hooks:
-  - tools/mkdocs_readmes.py
+  - scripts/mkdocs_readmes.py
 
 nav:
   - Inicio: index.md

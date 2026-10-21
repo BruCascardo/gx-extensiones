@@ -1,4 +1,5 @@
 <Project>
+  <!-- Configuración común a todos los proyectos del repositorio (MSBuild la toma sola) -->
   <PropertyGroup>
     <!-- Instalación de GeneXus contra la que se compila y a la que se despliega -->
     <GX_PROGRAM_DIR Condition=" '$(GX_PROGRAM_DIR)' == '' ">C:\GeneXus\GeneXus18u15b188745</GX_PROGRAM_DIR>
@@ -11,5 +12,8 @@
     <PlatformTarget>x86</PlatformTarget>
     <LangVersion>latest</LangVersion>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+
+    <!-- Al compilar la solución el SDK de GeneXus deja los .nupkg en <solución>\Packages: van a bin\ -->
+    <PackageOutputPath>$(MSBuildProjectDirectory)\bin\$(Configuration)\</PackageOutputPath>
   </PropertyGroup>
 </Project>

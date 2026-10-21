@@ -14,25 +14,68 @@ corresponda. Para un error ayuda mucho:
 
 ## Mandar cambios de código
 
+### Estructura del repositorio
+
+```text
+gx-extensiones/
+├── src/                        Una carpeta por extensión (un package de GeneXus cada una)
+│   └── GxQuickVar/
+│       ├── GxQuickVar.csproj   Proyecto, versión y descripción del package
+│       ├── GxQuickVar.package  Registro del package en el IDE (GUID)
+│       ├── *.cs                Código
+│       ├── README.md           Uso de la extensión (también es su página en el sitio)
+│       ├── Instalar.cmd        Instala en GeneXus (llama a deploy.ps1)
+│       ├── deploy.ps1          Instala / desinstala; viaja dentro del zip de la extensión
+│       └── pack.ps1            Compila y arma dist\GxQuickVar-<versión>.zip
+├── tests/                      Pruebas que corren sin abrir GeneXus (dotnet run)
+├── installer/                  InstalarPackages.exe: instala varias extensiones desde un menú
+├── docs/                       Sitio de documentación (MkDocs)
+├── scripts/                    Publicar.ps1 (release en GitHub) y el hook que arma el sitio
+├── GxExtensiones.sln           Solución con todas las extensiones y las pruebas
+├── Directory.Build.props       Configuración común: ruta de GeneXus, net471, x86
+├── global.json                 Versiones de los SDK de GeneXus
+└── nuget.config                Feeds de NuGet (nuget.org y el de GeneXus)
+```
+
+`Directory.Build.props`, `global.json` y `nuget.config` están en la raíz y valen para todos los
+proyectos: MSBuild los busca subiendo de carpeta, así que una extensión no necesita copias propias.
+
 ### Requisitos
 
 - **GeneXus 18 Upgrade 15** instalado: se compila contra sus DLL. Por defecto se busca en
   `C:\GeneXus\GeneXus18u15b188745`; si lo tenés en otro lado, pasá
   `-p:GX_PROGRAM_DIR="D:\ruta\a\GeneXus"` a `dotnet build` (o `-GxProgramDir` a los scripts).
 - **.NET SDK 8** o superior. El resto de las referencias de GeneXus se bajan del feed NuGet oficial
-  (`nuget.config` de cada proyecto).
+  (`nuget.config` de la raíz).
 
 ### Compilar y probar
 
-Cada extensión es un proyecto independiente en su carpeta `Gx<Nombre>`:
+Todo junto, con la solución (o abriendo `GxExtensiones.sln` en Visual Studio):
 
 ```powershell
-cd GxQuickVar
+dotnet build GxExtensiones.sln -c Release
+dotnet run --project tests/GxSdtJson.Tests
+```
+
+Una sola extensión, desde su carpeta:
+
+```powershell
+cd src\GxQuickVar
 dotnet build -c Release
 .\Instalar.cmd          # sube la versión, compila, arma dist\<Nombre>-<versión>.zip e instala
 ```
 
 GeneXus tiene que estar cerrado al instalar. Para desinstalar: `.\Instalar.cmd -Uninstall`.
+
+### Publicar un release
+
+```powershell
+.\scripts\Publicar.ps1 -Prueba   # arma dist\<tag>\GxExtensiones-<tag>.zip sin publicar
+.\scripts\Publicar.ps1           # crea el release en GitHub (requiere gh y el árbol sin cambios)
+```
+
+Toma el zip más nuevo de cada `src\<Extensión>\dist`, así que antes hay que correr `Instalar.cmd` (o
+`pack.ps1`) en las extensiones que cambiaron.
 
 ### Pull requests
 
@@ -44,16 +87,19 @@ GeneXus tiene que estar cerrado al instalar. Para desinstalar: `.\Instalar.cmd -
 
 ### Una extensión nueva
 
-Todas comparten la misma plantilla; lo más simple es copiar la más parecida (normalmente `GxCallParms`):
+Todas comparten la misma plantilla; lo más simple es copiar la carpeta de la más parecida dentro de
+`src\` (normalmente `GxCallParms`):
 
-- `.csproj` con `GeneXus.Package.UI.Sdk` (net471, x86) y `Directory.Build.props` con la ruta de GeneXus.
+- `.csproj` con `GeneXus.Package.UI.Sdk` (la ruta de GeneXus, net471 y x86 vienen del
+  `Directory.Build.props` de la raíz).
 - `deploy.ps1`, `pack.ps1` e `Instalar.cmd` para instalar y empaquetar.
 - Opciones en *Tools > Options* (`OptionsPage`), guardadas en `%APPDATA%\<Nombre>\settings.txt`
   (`Settings`), atajos configurables con un `IMessageFilter` (`KeyFilter`) y `Log` para diagnóstico.
 
 Al copiarla: generá un **GUID nuevo** para el package (`.package` y la clase `*Package`), elegí un atajo
-que no choque con los de las otras extensiones (tabla del [README](README.md)) y agregala a
-`GxInstalador/LEEME.txt` y a la tabla del `README.md`. La página del sitio se genera sola desde su README.
+que no choque con los de las otras extensiones (tabla del [README](README.md)), agregala a la solución
+(`dotnet sln add src/<Nombre>/<Nombre>.csproj`), a `installer/LEEME.txt` y a la tabla del `README.md`.
+La página del sitio se genera sola desde su README.
 
 ## Documentación
 

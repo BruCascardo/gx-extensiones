@@ -2,14 +2,14 @@
 .SYNOPSIS
   Publica un release en GitHub con el último zip de cada extensión y el instalador.
 .DESCRIPTION
-  1. Toma el zip más nuevo de cada Gx*\dist (los arma Instalar.cmd / pack.ps1 de cada extensión).
-  2. Recompila GxInstalador\InstalarPackages.exe.
+  1. Toma el zip más nuevo de cada src\<Extensión>\dist (los arma Instalar.cmd / pack.ps1 de cada extensión).
+  2. Recompila installer\InstalarPackages.exe.
   3. Arma GxExtensiones-<tag>.zip con el instalador, LEEME.txt y todos los zip, y crea el release
      <tag> con ese zip y cada zip suelto. Requiere el CLI de GitHub (gh) logueado.
 .EXAMPLE
-  .\Publicar.ps1                      # tag vAAAA.MM.DD
-  .\Publicar.ps1 -Tag v2026.10.21b
-  .\Publicar.ps1 -Prueba              # arma el zip pero no publica
+  .\scripts\Publicar.ps1                      # tag vAAAA.MM.DD
+  .\scripts\Publicar.ps1 -Tag v2026.10.21b
+  .\scripts\Publicar.ps1 -Prueba              # arma el zip pero no publica
 #>
 param(
 	[string]$Tag = ('v' + (Get-Date -Format 'yyyy.MM.dd')),
@@ -17,13 +17,14 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 
+$Raiz     = Split-Path $PSScriptRoot
 $Patron   = '^(?<nombre>.+)-(?<version>\d+(\.\d+){1,3})\.zip$'
-$Salida   = Join-Path $PSScriptRoot "dist\$Tag"
+$Salida   = Join-Path $Raiz "dist\$Tag"
 $Paquetes = Join-Path $Salida 'GxExtensiones'
 
 if (-not $Prueba) {
 	if (-not (Get-Command gh -ErrorAction SilentlyContinue)) { throw 'No encuentro gh (CLI de GitHub): winget install GitHub.cli' }
-	if (git -C $PSScriptRoot status --porcelain) { throw 'Hay cambios sin commitear: el release tiene que salir de lo que está en GitHub.' }
+	if (git -C $Raiz status --porcelain) { throw 'Hay cambios sin commitear: el release tiene que salir de lo que está en GitHub.' }
 }
 
 Remove-Item $Salida -Recurse -Force -ErrorAction SilentlyContinue
@@ -31,7 +32,7 @@ New-Item -ItemType Directory -Force $Paquetes | Out-Null
 
 # Último zip de cada extensión
 $Notas = @("Instalación: bajar GxExtensiones-$Tag.zip, descomprimirlo, cerrar GeneXus y ejecutar InstalarPackages.exe.", '', '| Extensión | Versión |', '|---|---|')
-foreach ($Proyecto in Get-ChildItem $PSScriptRoot -Directory -Filter 'Gx*') {
+foreach ($Proyecto in Get-ChildItem (Join-Path $Raiz 'src') -Directory) {
 	$Dist = Join-Path $Proyecto.FullName 'dist'
 	if (-not (Test-Path $Dist)) { continue }
 	$Ultimo = Get-ChildItem $Dist -Filter '*.zip' -File |
@@ -45,8 +46,8 @@ foreach ($Proyecto in Get-ChildItem $PSScriptRoot -Directory -Filter 'Gx*') {
 }
 
 # Instalador
-& (Join-Path $PSScriptRoot 'GxInstalador\Compilar.ps1')
-Copy-Item (Join-Path $PSScriptRoot 'GxInstalador\InstalarPackages.exe'), (Join-Path $PSScriptRoot 'GxInstalador\LEEME.txt') $Paquetes
+& (Join-Path $Raiz 'installer\Compilar.ps1')
+Copy-Item (Join-Path $Raiz 'installer\InstalarPackages.exe'), (Join-Path $Raiz 'installer\LEEME.txt') $Paquetes
 
 $Bundle = Join-Path $Salida "GxExtensiones-$Tag.zip"
 Compress-Archive -Path (Join-Path $Paquetes '*') -DestinationPath $Bundle

@@ -1,4 +1,4 @@
-"""Hook de MkDocs: cada Gx*/README.md es la página de su extensión en el sitio.
+"""Hook de MkDocs: cada src/<Extensión>/README.md es la página de su extensión en el sitio.
 
 Antes de compilar copia los README a docs/extensiones/<Nombre>.md y CONTRIBUTING.md a
 docs/contribuir.md, y agrega la sección Extensiones al menú. Así una extensión nueva aparece
@@ -8,6 +8,7 @@ import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+SRC = ROOT / "src"
 DOCS = ROOT / "docs"
 EXTENSIONES = DOCS / "extensiones"
 REPO = "https://github.com/BruCascardo/gx-extensiones/blob/main/"
@@ -17,7 +18,7 @@ LINK = re.compile(r"\]\((?!https?://|#|mailto:)([^)\s]+)\)")
 
 
 def _extensions():
-    return sorted(p.parent for p in ROOT.glob("Gx*/README.md"))
+    return sorted(p.parent for p in SRC.glob("*/README.md"))
 
 
 def _fix_links(text, folder):
@@ -26,7 +27,7 @@ def _fix_links(text, folder):
         name = Path(target).parent.name
         if target.endswith("README.md") and name.startswith("Gx"):
             return f"]({name}.md)"
-        return f"]({REPO}{folder}/{target})"
+        return f"]({REPO}src/{folder}/{target})"
     return LINK.sub(replace, text)
 
 

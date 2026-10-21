@@ -6,14 +6,14 @@ dist/
 *.user
 
 # Binarios apartados a mano
-GxCodeKeys/apartado/
+src/GxCodeKeys/apartado/
 
-# Se arma con GxInstalador\Compilar.ps1 y se publica en cada release
-GxInstalador/InstalarPackages.exe
+# Se arma con installer\Compilar.ps1 y se publica en cada release
+installer/InstalarPackages.exe
 
 # Distribución interna (carpeta compartida de Google Drive)
-SubirPackages.cmd
-SubirPackages.ps1
+scripts/SubirPackages.cmd
+scripts/SubirPackages.ps1
 
 # Sitio de documentación: el hook copia los README y CONTRIBUTING al compilar
 docs/extensiones/

@@ -8,12 +8,6 @@
     <FileVersion>$(Version).0</FileVersion>
   </PropertyGroup>
 
-  <!-- El proyecto de pruebas (tests\) se compila aparte -->
-  <ItemGroup>
-    <Compile Remove="tests\**" />
-    <None Remove="tests\**" />
-  </ItemGroup>
-
   <!-- Estos ensamblados no están en el feed NuGet de GeneXus: se referencian desde la
        instalación local, sin copiarlos (los provee el IDE en runtime). -->
   <ItemGroup>
