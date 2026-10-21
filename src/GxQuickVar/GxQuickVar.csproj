@@ -4,7 +4,7 @@
     <AssemblyName>GxQuickVar</AssemblyName>
     <AssemblyTitle>GxQuickVar</AssemblyTitle>
     <Description>Declara la &amp;variable bajo el cursor y le asigna el tipo desde un desplegable</Description>
-    <Version>1.5.2</Version>
+    <Version>1.5.3</Version>
     <FileVersion>$(Version).0</FileVersion>
   </PropertyGroup>
 

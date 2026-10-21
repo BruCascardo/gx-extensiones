@@ -523,9 +523,9 @@ namespace GxQuickVar
                 }
                 else
                 {
-                    bool exact = row.Entry.IsNamed(typed)
-                        || string.Equals(typed, row.Entry.ObjectName, StringComparison.OrdinalIgnoreCase);
-                    if (!exact || row.Entry.DefaultParameters.Length > 0)
+                    // Solo el nombre ("inGenerar") no alcanza: puede haber uno igual en otro módulo y
+                    // no se sabría cuál es. Se completa con el de la fila elegida, que lleva su módulo.
+                    if (!row.Entry.IsNamed(typed) || row.Entry.DefaultParameters.Length > 0)
                     {
                         Complete(row);
                         // Si lleva parámetros, queda seleccionado el valor por defecto para pisarlo
