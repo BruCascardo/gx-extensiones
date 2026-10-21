@@ -1,0 +1,17 @@
+﻿<Project Sdk="GeneXus.Package.UI.Sdk">
+  <PropertyGroup>
+    <RootNamespace>GxQuickOpen</RootNamespace>
+    <AssemblyName>GxQuickOpen</AssemblyName>
+    <AssemblyTitle>GxQuickOpen</AssemblyTitle>
+    <Description>Reemplaza el diálogo Ctrl+O: búsqueda instantánea de objetos con el módulo a la vista y filtro de módulo escribible</Description>
+    <Version>1.2.1</Version>
+    <FileVersion>$(Version).0</FileVersion>
+  </PropertyGroup>
+
+  <!-- La vista previa y las pruebas (sin GeneXus) compilan Matcher.cs y QuickOpenPopup.cs aparte -->
+  <ItemGroup>
+    <Compile Remove="tests\**;preview\**" />
+    <None Remove="tests\**;preview\**" />
+    <EmbeddedResource Remove="tests\**;preview\**" />
+  </ItemGroup>
+</Project>

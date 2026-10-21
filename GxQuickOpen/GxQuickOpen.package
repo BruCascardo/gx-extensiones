@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Package xmlns="http://schemas.genexus.com/addin/v1.0" id="6847CA06-EE55-45C6-BFC3-5CC9F4718CD0" name="GxQuickOpen">
+  <Resources>
+    <Resource type="strings" name="GxQuickOpen.Messages" />
+  </Resources>
+
+  <!-- Sin atributo shortcut: el atajo (Ctrl+O por defecto) es configurable en
+       Tools > Options > GxQuickOpen y lo maneja KeyBindingFilter. -->
+  <Commands>
+    <CommandDefinition id="GxQuickOpenShow" resourceId="CmdShow" />
+    <CommandDefinition id="GxQuickOpenOptions" resourceId="CmdOptions" />
+  </Commands>
+
+  <Groups>
+    <Group id="GxQuickOpenFileGroup">
+      <Command refid="GxQuickOpenShow" />
+    </Group>
+    <Group id="GxQuickOpenToolsGroup">
+      <Command refid="GxQuickOpenOptions" />
+    </Group>
+  </Groups>
+
+  <Menus>
+    <Menu type="menubar">
+      <Popup name="File" refid="FilePopup">
+        <Group refid="GxQuickOpenFileGroup" />
+      </Popup>
+      <Popup name="Tools" refid="ToolsMenu">
+        <Group refid="GxQuickOpenToolsGroup" />
+      </Popup>
+    </Menu>
+  </Menus>
+</Package>

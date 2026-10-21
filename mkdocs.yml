@@ -1,0 +1,47 @@
+site_name: Extensiones para GeneXus 18
+site_description: Extensiones para el IDE de GeneXus 18 que agilizan la edición de código
+site_url: https://brucascardo.github.io/gx-extensiones/
+repo_url: https://github.com/BruCascardo/gx-extensiones
+repo_name: gx-extensiones
+edit_uri: ""
+
+theme:
+  name: material
+  language: es
+  features:
+    - navigation.instant
+    - navigation.sections
+    - navigation.top
+    - search.highlight
+    - content.code.copy
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      toggle:
+        icon: material/weather-night
+        name: Modo oscuro
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      toggle:
+        icon: material/weather-sunny
+        name: Modo claro
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.highlight
+  - pymdownx.superfences
+
+# Copia los README de cada extensión y CONTRIBUTING.md a docs/ y arma la sección Extensiones del menú
+hooks:
+  - tools/mkdocs_readmes.py
+
+nav:
+  - Inicio: index.md
+  - Instalación: instalacion.md
+  - Contribuir: contribuir.md

@@ -1,0 +1,10 @@
+<Project Sdk="GeneXus.Package.UI.Sdk">
+  <PropertyGroup>
+    <RootNamespace>GxOpenWeb</RootNamespace>
+    <AssemblyName>GxOpenWeb</AssemblyName>
+    <AssemblyTitle>GxOpenWeb</AssemblyTitle>
+    <Description>Clic derecho en la pestaña de un Web Panel &gt; Abrir: lo abre en el navegador en Local, CI o Preprod</Description>
+    <Version>1.0.2</Version>
+    <FileVersion>$(Version).0</FileVersion>
+  </PropertyGroup>
+</Project>

@@ -1,0 +1,43 @@
+name: Reportar un error
+description: Algo no funciona como debería
+labels: ["error"]
+body:
+  - type: dropdown
+    id: extension
+    attributes:
+      label: Extensión
+      options:
+        - GxCallParms
+        - GxCodeKeys
+        - GxOpenWeb
+        - GxQuickOpen
+        - GxQuickVar
+        - GxSdtExpand
+        - GxSdtJson
+        - Instalador
+        - Otra / no sé
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Versión de la extensión
+      description: Está en el nombre del zip (ej. GxQuickVar-1.0.4.zip).
+  - type: input
+    id: genexus
+    attributes:
+      label: Versión de GeneXus
+      placeholder: GeneXus 18 U15
+  - type: textarea
+    id: pasos
+    attributes:
+      label: Qué pasó
+      description: Qué hiciste, qué esperabas y qué pasó. Si se puede, un fragmento de código para reproducirlo.
+    validations:
+      required: true
+  - type: textarea
+    id: log
+    attributes:
+      label: Log
+      description: Contenido de %APPDATA%\<Extensión>\log.txt o de la ventana Output de GeneXus, si hay algo.
+      render: text

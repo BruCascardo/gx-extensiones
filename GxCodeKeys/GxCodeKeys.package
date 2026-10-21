@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Package xmlns="http://schemas.genexus.com/addin/v1.0" id="8A4083E3-88B9-4F33-9068-92D23AA4EAE0" name="GxCodeKeys">
+  <Resources>
+    <Resource type="strings" name="GxCodeKeys.Messages" />
+  </Resources>
+
+  <!-- Sin atributo shortcut: el enum Shortcut de WinForms no admite Ctrl+Alt+flecha ni
+       Alt+Shift+flecha, y los atajos son configurables (Tools > Options > GxCodeKeys).
+       Los maneja KeyboardFilter. -->
+  <Commands>
+    <CommandDefinition id="GxCodeKeysMoveLineUp" context="selection" resourceId="CmdMoveLineUp" />
+    <CommandDefinition id="GxCodeKeysMoveLineDown" context="selection" resourceId="CmdMoveLineDown" />
+    <CommandDefinition id="GxCodeKeysDuplicateLineUp" context="selection" resourceId="CmdDuplicateLineUp" />
+    <CommandDefinition id="GxCodeKeysDuplicateLineDown" context="selection" resourceId="CmdDuplicateLineDown" />
+    <CommandDefinition id="GxCodeKeysCursorAbove" context="selection" resourceId="CmdCursorAbove" />
+    <CommandDefinition id="GxCodeKeysCursorBelow" context="selection" resourceId="CmdCursorBelow" />
+    <CommandDefinition id="GxCodeKeysOptions" resourceId="CmdOptions" />
+  </Commands>
+
+  <Groups>
+    <Group id="GxCodeKeysEditGroup">
+      <Command refid="GxCodeKeysMoveLineUp" />
+      <Command refid="GxCodeKeysMoveLineDown" />
+      <Command refid="GxCodeKeysDuplicateLineUp" />
+      <Command refid="GxCodeKeysDuplicateLineDown" />
+      <Command refid="GxCodeKeysCursorAbove" />
+      <Command refid="GxCodeKeysCursorBelow" />
+    </Group>
+    <Group id="GxCodeKeysToolsGroup">
+      <Command refid="GxCodeKeysOptions" />
+    </Group>
+  </Groups>
+
+  <Menus>
+    <Menu type="menubar">
+      <Popup name="Edit" refid="EditMenu">
+        <Group refid="GxCodeKeysEditGroup" />
+      </Popup>
+      <Popup name="Tools" refid="ToolsMenu">
+        <Group refid="GxCodeKeysToolsGroup" />
+      </Popup>
+    </Menu>
+  </Menus>
+</Package>

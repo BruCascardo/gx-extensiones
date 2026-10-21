@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Package xmlns="http://schemas.genexus.com/addin/v1.0" id="59068EEB-297C-49F4-9E94-5505C3B214F2" name="GxSdtJson">
+  <Resources>
+    <Resource type="strings" name="GxSdtJson.Messages" />
+  </Resources>
+
+  <Commands>
+    <CommandDefinition id="GxSdtJsonCopy" resourceId="CmdCopy" />
+    <CommandDefinition id="GxSdtJsonImport" resourceId="CmdImport" />
+    <!-- Igual que GxSdtJsonImport pero siempre visible (menú Tools): sin SDT abierto crea uno nuevo -->
+    <CommandDefinition id="GxSdtJsonImportNew" resourceId="CmdImportNew" />
+  </Commands>
+
+  <Groups>
+    <Group id="GxSdtJsonGroup">
+      <Command refid="GxSdtJsonCopy" />
+      <Command refid="GxSdtJsonImport" />
+    </Group>
+  </Groups>
+
+  <Menus>
+    <!-- Barra propia: los botones solo se ven cuando el documento activo es un SDT -->
+    <Menu type="toolbar" id="GxSdtJsonToolbar" name="SDT JSON" visible="true" row="2">
+      <Group refid="GxSdtJsonGroup" />
+    </Menu>
+
+    <Menu type="menubar">
+      <Popup name="Edit" refid="EditMenu">
+        <Group refid="GxSdtJsonGroup" />
+      </Popup>
+      <Popup name="Tools" refid="ToolsMenu">
+        <Group>
+          <Command refid="GxSdtJsonImportNew" />
+        </Group>
+      </Popup>
+    </Menu>
+
+    <!-- Menús contextuales del editor de SDT (package TransactionEditor) -->
+    <Menu type="context" id="SdtContextRoot" package="96BEF989-5B7D-4126-8DD2-27163563A9A9">
+      <Group refid="GxSdtJsonGroup" />
+    </Menu>
+    <Menu type="context" id="SdtContextLevel" package="96BEF989-5B7D-4126-8DD2-27163563A9A9">
+      <Group refid="GxSdtJsonGroup" />
+    </Menu>
+    <Menu type="context" id="SdtContextItem" package="96BEF989-5B7D-4126-8DD2-27163563A9A9">
+      <Group refid="GxSdtJsonGroup" />
+    </Menu>
+  </Menus>
+</Package>

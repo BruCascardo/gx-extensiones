@@ -1,0 +1,22 @@
+# Compilación
+bin/
+obj/
+dist/
+.vs/
+*.user
+
+# Binarios apartados a mano
+GxCodeKeys/apartado/
+
+# Se arma con GxInstalador\Compilar.ps1 y se publica en cada release
+GxInstalador/InstalarPackages.exe
+
+# Distribución interna (carpeta compartida de Google Drive)
+SubirPackages.cmd
+SubirPackages.ps1
+
+# Sitio de documentación: el hook copia los README y CONTRIBUTING al compilar
+docs/extensiones/
+docs/contribuir.md
+site/
+__pycache__/

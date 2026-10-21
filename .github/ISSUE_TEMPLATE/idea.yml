@@ -1,0 +1,27 @@
+name: Proponer una idea
+description: Una mejora a una extensión o una extensión nueva
+labels: ["idea"]
+body:
+  - type: dropdown
+    id: extension
+    attributes:
+      label: Extensión
+      options:
+        - Una extensión nueva
+        - GxCallParms
+        - GxCodeKeys
+        - GxOpenWeb
+        - GxQuickOpen
+        - GxQuickVar
+        - GxSdtExpand
+        - GxSdtJson
+        - Instalador
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: La idea
+      description: Qué te gustaría que haga y en qué situación lo usarías. Un ejemplo de código antes/después ayuda mucho.
+    validations:
+      required: true

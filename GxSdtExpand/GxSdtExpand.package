@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Package xmlns="http://schemas.genexus.com/addin/v1.0" id="DDA0FE6A-7D5C-4DC6-BB01-ADB22B3F04CD" name="GxSdtExpand">
+  <Resources>
+    <Resource type="strings" name="GxSdtExpand.Messages" />
+  </Resources>
+
+  <!-- Sin atributo shortcut: el atajo es configurable (Tools > Options > GxSdtExpand)
+       y lo maneja KeyFilter. -->
+  <Commands>
+    <CommandDefinition id="GxSdtExpandRun" context="selection" resourceId="CmdExpand" />
+    <CommandDefinition id="GxSdtExpandAll" context="selection" resourceId="CmdExpandAll" />
+    <CommandDefinition id="GxSdtExpandOptions" resourceId="CmdOptions" />
+  </Commands>
+
+  <Groups>
+    <Group id="GxSdtExpandEditGroup">
+      <Command refid="GxSdtExpandRun" />
+      <Command refid="GxSdtExpandAll" />
+    </Group>
+    <Group id="GxSdtExpandToolsGroup">
+      <Command refid="GxSdtExpandOptions" />
+    </Group>
+  </Groups>
+
+  <Menus>
+    <Menu type="menubar">
+      <Popup name="Edit" refid="EditMenu">
+        <Group refid="GxSdtExpandEditGroup" />
+      </Popup>
+      <Popup name="Tools" refid="ToolsMenu">
+        <Group refid="GxSdtExpandToolsGroup" />
+      </Popup>
+    </Menu>
+
+    <!-- Menú contextual del editor de texto (package TextEditor) -->
+    <Menu type="context" id="TextEditorContext" package="E52B74A8-98E2-4a99-AE0E-547C72BD086D">
+      <Group>
+        <Command refid="GxSdtExpandRun" />
+        <Command refid="GxSdtExpandAll" />
+      </Group>
+    </Menu>
+  </Menus>
+</Package>

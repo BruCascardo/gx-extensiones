@@ -1,0 +1,38 @@
+<Project Sdk="GeneXus.Package.UI.Sdk">
+  <PropertyGroup>
+    <RootNamespace>GxSdtJson</RootNamespace>
+    <AssemblyName>GxSdtJson</AssemblyName>
+    <AssemblyTitle>GxSdtJson</AssemblyTitle>
+    <Description>Copia la estructura de un SDT como JSON y genera la estructura a partir de un JSON</Description>
+    <Version>1.1.2</Version>
+    <FileVersion>$(Version).0</FileVersion>
+  </PropertyGroup>
+
+  <!-- El proyecto de pruebas (tests\) se compila aparte -->
+  <ItemGroup>
+    <Compile Remove="tests\**" />
+    <None Remove="tests\**" />
+  </ItemGroup>
+
+  <!-- Estos ensamblados no están en el feed NuGet de GeneXus: se referencian desde la
+       instalación local, sin copiarlos (los provee el IDE en runtime). -->
+  <ItemGroup>
+    <Reference Include="Artech.Genexus.UI.Common">
+      <HintPath>$(GX_PROGRAM_DIR)\Artech.Genexus.UI.Common.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <!-- Editor de SDT (Ctrl+C / Ctrl+V en la grilla) -->
+    <Reference Include="Artech.Packages.StructureEditors">
+      <HintPath>$(GX_PROGRAM_DIR)\Packages\Artech.Packages.StructureEditors.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Artech.Editors.Common">
+      <HintPath>$(GX_PROGRAM_DIR)\Packages\Artech.Editors.Common.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>$(GX_PROGRAM_DIR)\Newtonsoft.Json.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+</Project>

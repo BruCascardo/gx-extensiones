@@ -1,0 +1,31 @@
+<Project Sdk="GeneXus.Package.UI.Sdk">
+  <PropertyGroup>
+    <RootNamespace>GxCodeKeys</RootNamespace>
+    <AssemblyName>GxCodeKeys</AssemblyName>
+    <AssemblyTitle>GxCodeKeys</AssemblyTitle>
+    <Description>Atajos de Visual Studio Code en el editor de código de GeneXus: mover y duplicar líneas, múltiples cursores</Description>
+    <Version>1.2.1</Version>
+    <FileVersion>$(Version).0</FileVersion>
+  </PropertyGroup>
+
+  <!-- Estos ensamblados no están en el feed NuGet de GeneXus: se referencian desde la
+       instalación local, sin copiarlos (los provee el IDE en runtime). -->
+  <ItemGroup>
+    <Reference Include="Artech.Genexus.UI.Common">
+      <HintPath>$(GX_PROGRAM_DIR)\Artech.Genexus.UI.Common.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="ActiproSoftware.SyntaxEditor.Net20">
+      <HintPath>$(GX_PROGRAM_DIR)\ActiproSoftware.SyntaxEditor.Net20.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="ActiproSoftware.WinUICore.Net20">
+      <HintPath>$(GX_PROGRAM_DIR)\ActiproSoftware.WinUICore.Net20.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="ActiproSoftware.Shared.Net20">
+      <HintPath>$(GX_PROGRAM_DIR)\ActiproSoftware.Shared.Net20.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+</Project>

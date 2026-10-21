@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Package xmlns="http://schemas.genexus.com/addin/v1.0" id="1063769E-C254-4F9B-BABB-DBAD176DD5F7" name="GxCallParms">
+  <Resources>
+    <Resource type="strings" name="GxCallParms.Messages" />
+  </Resources>
+
+  <!-- Sin atributo shortcut: el atajo es configurable (Tools > Options > GxCallParms)
+       y lo maneja KeyFilter. -->
+  <Commands>
+    <CommandDefinition id="GxCallParmsFill" context="selection" resourceId="CmdFill" />
+    <CommandDefinition id="GxCallParmsOptions" resourceId="CmdOptions" />
+  </Commands>
+
+  <Groups>
+    <Group id="GxCallParmsEditGroup">
+      <Command refid="GxCallParmsFill" />
+    </Group>
+    <Group id="GxCallParmsToolsGroup">
+      <Command refid="GxCallParmsOptions" />
+    </Group>
+  </Groups>
+
+  <Menus>
+    <Menu type="menubar">
+      <Popup name="Edit" refid="EditMenu">
+        <Group refid="GxCallParmsEditGroup" />
+      </Popup>
+      <Popup name="Tools" refid="ToolsMenu">
+        <Group refid="GxCallParmsToolsGroup" />
+      </Popup>
+    </Menu>
+
+    <!-- Menú contextual del editor de texto (package TextEditor) -->
+    <Menu type="context" id="TextEditorContext" package="E52B74A8-98E2-4a99-AE0E-547C72BD086D">
+      <Group>
+        <Command refid="GxCallParmsFill" />
+      </Group>
+    </Menu>
+  </Menus>
+</Package>

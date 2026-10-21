@@ -1,0 +1,40 @@
+PACKAGES DE GENEXUS 18 U15 - INSTALACIÓN
+
+1. Cerrar GeneXus.
+2. En esta carpeta, doble clic en InstalarPackages.exe
+   - Si Windows avisa "Windows protegió su PC": Más información > Ejecutar de todas formas.
+3. Aparece la lista de packages, cada uno con lo que hace y si ya está instalado. Escribir:
+      all      para instalar todos
+      3        para instalar solo el 3
+      1,3,5    para instalar varios
+   y Enter. Enter sin escribir nada sale sin instalar.
+4. Esperar a que diga "Listo" y apretar una tecla.
+5. Abrir GeneXus normalmente.
+
+El instalador copia los zip elegidos a C:\Packages, los descomprime y los instala todos juntos. Si
+alguno ya está instalado y al día, lo saltea. Para actualizar cuando haya versiones nuevas en esta
+carpeta, se hace lo mismo.
+
+Si algo falla:
+- "Sin permiso para escribir...": clic derecho en InstalarPackages.exe > Ejecutar como administrador.
+- "No encontré GeneXus 18 U15" o "Encontré varias instalaciones": abrir una consola en esta carpeta
+  y ejecutar:
+      InstalarPackages.exe -GxProgramDir "C:\ruta\a\GeneXus18U15"
+- "GeneXus está abierto": cerrarlo (revisar también el Administrador de tareas) y volver a ejecutar.
+- Para forzar la reinstalación:  InstalarPackages.exe -Reinstalar
+- Sin menú (para scripts):  InstalarPackages.exe -Paquetes all   o   -Paquetes "GxQuickVar,GxSdtJson"
+
+Qué hace cada package:
+- GxCallParms: al escribir Objeto.call( u Objeto.udp( completa los parámetros y declara las variables.
+- GxCodeKeys: atajos de teclado para el editor de código (Tools > Options > GxCodeKeys).
+- GxOpenWeb:  clic derecho en la pestaña de un Web Panel > Abrir > Local, CI o Preprod lo abre en el
+  navegador.
+- GxQuickOpen: Ctrl+O con búsqueda instantánea de objetos y el módulo de cada uno a la vista.
+- GxQuickVar: Alt+V declara la &variable bajo el cursor eligiendo el tipo de un desplegable.
+- GxSdtExpand: Alt+S sobre una &variable SDT o Business Component escribe New() y una asignación
+  por miembro con los = alineados; Alt+Shift+S despliega todo, colecciones y subestructuras incluidas.
+- GxSdtJson:  al abrir un SDT, barra "SDT JSON" para copiar la estructura como JSON e importarla en otro.
+
+Para mantenerlo (no hace falta copiarlo a la carpeta compartida): InstalarPackages.exe trae adentro
+InstalarPackages.ps1. Si se cambia el .ps1 hay que correr Compilar.ps1 para rearmar el exe. La
+descripción del menú sale del <Description> del .csproj de cada package.

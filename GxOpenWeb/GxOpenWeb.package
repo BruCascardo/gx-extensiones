@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Package xmlns="http://schemas.genexus.com/addin/v1.0" id="F05C67CA-B75E-4774-AA28-9B8A11EDFD54" name="GxOpenWeb">
+  <Resources>
+    <Resource type="strings" name="GxOpenWeb.Messages" />
+  </Resources>
+
+  <!-- context="selection": el menú de la pestaña pasa como contexto el objeto de esa pestaña -->
+  <Commands>
+    <CommandDefinition id="GxOpenWebLocal" context="selection" resourceId="CmdLocal" />
+    <CommandDefinition id="GxOpenWebCi" context="selection" resourceId="CmdCi" />
+    <CommandDefinition id="GxOpenWebPreprod" context="selection" resourceId="CmdPreprod" />
+    <CommandDefinition id="GxOpenWebOptions" resourceId="CmdOptions" />
+  </Commands>
+
+  <Groups>
+    <Group id="GxOpenWebToolsGroup">
+      <Command refid="GxOpenWebOptions" />
+    </Group>
+  </Groups>
+
+  <Menus>
+    <Menu type="menubar">
+      <Popup name="Tools" refid="ToolsMenu">
+        <Group refid="GxOpenWebToolsGroup" />
+      </Popup>
+    </Menu>
+
+    <!-- Menú contextual de la pestaña de un objeto (package Core) -->
+    <Menu type="context" id="MainWindowKBObjectContext" package="98121D96-A7D8-468b-9310-B1F468F812AE">
+      <Group>
+        <Popup id="GxOpenWebPopup" name="MnuOpen">
+          <Command refid="GxOpenWebLocal" />
+          <Command refid="GxOpenWebCi" />
+          <Command refid="GxOpenWebPreprod" />
+        </Popup>
+      </Group>
+    </Menu>
+  </Menus>
+</Package>
