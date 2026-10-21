@@ -1,14 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <!-- Pruebas del formato JSON (SdtNode.cs de GxSdtJson), sin abrir GeneXus: dotnet run.
-       GX_PROGRAM_DIR y la plataforma x86 vienen del Directory.Build.props de la raíz. -->
+  <!-- Pruebas del formato JSON (SdtNode.cs de GxSdtJson), sin GeneXus: dotnet run.
+       Corren también en GitHub Actions, donde no hay GeneXus instalado. -->
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net471</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\..\src\GxSdtJson\SdtNode.cs" Link="SdtNode.cs" />
-    <Reference Include="Newtonsoft.Json">
-      <HintPath>$(GX_PROGRAM_DIR)\Newtonsoft.Json.dll</HintPath>
-    </Reference>
+    <!-- La misma versión que trae GeneXus 18 U15 (Newtonsoft.Json.dll 10.0.3), desde NuGet -->
+    <PackageReference Include="Newtonsoft.Json" Version="10.0.3" />
+    <!-- Su vulnerabilidad conocida (JSON anidado sin límite) no aplica a pruebas que solo leen JSON
+         propios; la extensión usa la DLL de GeneXus, no este paquete -->
+    <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-5crp-9r3c-p9vr" />
   </ItemGroup>
 </Project>
