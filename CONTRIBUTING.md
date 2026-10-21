@@ -30,7 +30,7 @@ gx-extensiones/
 ├── tests/                      Pruebas que corren sin abrir GeneXus (dotnet run)
 ├── installer/                  InstalarPackages.exe: instala varias extensiones desde un menú
 ├── docs/                       Sitio de documentación (MkDocs)
-├── scripts/                    Publicar.ps1 (release en GitHub) y el hook que arma el sitio
+├── scripts/                    Verificar.ps1 (coherencia), Publicar.ps1 (release) y el hook del sitio
 ├── GxExtensiones.sln           Solución con todas las extensiones y las pruebas
 ├── Directory.Build.props       Configuración común: ruta de GeneXus, net471, x86
 ├── global.json                 Versiones de los SDK de GeneXus
@@ -55,6 +55,7 @@ Todo junto, con la solución (o abriendo `GxExtensiones.sln` en Visual Studio):
 ```powershell
 dotnet build GxExtensiones.sln -c Release
 dotnet run --project tests/GxSdtJson.Tests
+.\scripts\Verificar.ps1   # README, LEEME, solución, GUID y plantilla de cada extensión
 ```
 
 Una sola extensión, desde su carpeta:
@@ -66,6 +67,24 @@ dotnet build -c Release
 ```
 
 GeneXus tiene que estar cerrado al instalar. Para desinstalar: `.\Instalar.cmd -Uninstall`.
+
+### Integración continua
+
+En cada push a `main` y en cada pull request, el workflow **CI** de GitHub Actions revisa lo que se
+puede revisar sin GeneXus instalado:
+
+- **Coherencia del repo** (`scripts/Verificar.ps1`): cada extensión de `src/` está en el README, en
+  `docs/index.md`, en `installer/LEEME.txt` y en la solución; su GUID de package no se repite; sus
+  `deploy.ps1`, `pack.ps1` e `Instalar.cmd` son los de la plantilla, y los `.ps1` con acentos tienen BOM.
+- **Pruebas de GxSdtJson.**
+- **Scripts e instalador**: que todos los `.ps1` se puedan leer en Windows PowerShell 5.1 (el que usa
+  quien instala), PSScriptAnalyzer (las advertencias quedan anotadas sin frenar el PR) y que
+  `InstalarPackages.exe` compile.
+- **Documentación** (solo en pull requests): que el sitio se arme sin enlaces rotos.
+
+Las extensiones no se compilan en CI: usan DLL de GeneXus que no se pueden subir al repositorio. Eso,
+y probarlas en el IDE, queda del lado de quien manda el cambio. Dependabot propone una vez por mes
+actualizar las acciones de los workflows y MkDocs.
 
 ### Publicar un release
 
@@ -99,7 +118,7 @@ Todas comparten la misma plantilla; lo más simple es copiar la carpeta de la m�
 Al copiarla: generá un **GUID nuevo** para el package (`.package` y la clase `*Package`), elegí un atajo
 que no choque con los de las otras extensiones (tabla del [README](README.md)), agregala a la solución
 (`dotnet sln add src/<Nombre>/<Nombre>.csproj`), a `installer/LEEME.txt` y a la tabla del `README.md`.
-La página del sitio se genera sola desde su README.
+La página del sitio se genera sola desde su README. `.\scripts\Verificar.ps1` avisa si falta algo de esto.
 
 ## Documentación
 

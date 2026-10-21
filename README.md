@@ -1,5 +1,7 @@
 # Extensiones para GeneXus 18
 
+[![CI](https://github.com/BruCascardo/gx-extensiones/actions/workflows/ci.yml/badge.svg)](https://github.com/BruCascardo/gx-extensiones/actions/workflows/ci.yml)
+
 Extensiones para el IDE de **GeneXus 18 Upgrade 15** que agilizan la edición de código: completar
 parámetros, declarar variables, abrir objetos al instante, atajos al estilo VS Code y más.
 

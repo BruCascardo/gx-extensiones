@@ -1,0 +1,90 @@
+name: CI
+
+# Lo que se puede revisar sin GeneXus instalado: las extensiones compilan contra DLL de GeneXus que no
+# se pueden subir a GitHub, así que se compilan y prueban en el IDE (ver CONTRIBUTING.md).
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  coherencia:
+    name: Coherencia del repo
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: README, LEEME, solución, GUID y plantilla de cada extensión
+        shell: powershell
+        run: .\scripts\Verificar.ps1
+
+  pruebas:
+    name: Pruebas de GxSdtJson
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - run: dotnet run --project tests/GxSdtJson.Tests -c Release
+
+  scripts:
+    name: Scripts e instalador
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Quien instala usa Windows PowerShell 5.1: un script con sintaxis de PowerShell 7 falla ahí
+      - name: Sintaxis en Windows PowerShell 5.1
+        shell: powershell
+        run: |
+          $Fallas = 0
+          foreach ($Script in git ls-files '*.ps1') {
+            $Errores = $null
+            [System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path $Script).Path, [ref]$null, [ref]$Errores) | Out-Null
+            foreach ($Problema in $Errores) {
+              Write-Host "::error file=$Script,line=$($Problema.Extent.StartLineNumber)::$($Problema.Message)"
+              $Fallas++
+            }
+          }
+          if ($Fallas) { exit 1 }
+          Write-Host 'OK: todos los .ps1 se pueden leer en Windows PowerShell 5.1.'
+
+      # Las advertencias quedan anotadas en el PR sin frenarlo; los errores sí lo frenan
+      - name: PSScriptAnalyzer
+        shell: pwsh
+        run: |
+          if (-not (Get-Module -ListAvailable PSScriptAnalyzer)) { Install-Module PSScriptAnalyzer -Force -Scope CurrentUser }
+          $Resultados = @(Invoke-ScriptAnalyzer -Path . -Recurse -ExcludeRule PSAvoidUsingWriteHost |
+            Where-Object Severity -ne 'Information')
+          foreach ($Resultado in $Resultados) {
+            $Nivel   = if ($Resultado.Severity -in 'Error', 'ParseError') { 'error' } else { 'warning' }
+            $Archivo = (Resolve-Path -Relative $Resultado.ScriptPath) -replace '\\', '/' -replace '^\./', ''
+            Write-Host "::$Nivel file=$Archivo,line=$($Resultado.Line),title=$($Resultado.RuleName)::$($Resultado.Message)"
+          }
+          Write-Host "$($Resultados.Count) observación(es)."
+          if ($Resultados | Where-Object Severity -in 'Error', 'ParseError') { exit 1 }
+
+      - name: Compilar InstalarPackages.exe
+        shell: powershell
+        run: .\installer\Compilar.ps1
+
+  # En main lo hace el workflow Documentación, que además publica el sitio
+  documentacion:
+    name: Documentación
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r docs/requirements.txt
+      - run: mkdocs build --strict
