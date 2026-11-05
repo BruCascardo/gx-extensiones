@@ -29,32 +29,13 @@ namespace GxQuickOpen
             "prc", "proc", "dp", "wp", "wc", "mp", "sdt", "trn", "dom", "eo", "ds", "att", "tbl", "img", "rpt", "sdp", "ww",
         };
 
-        /// <summary>
-        /// Un Web Panel puede ser página, componente o master page (propiedad Type): cada uno se muestra
-        /// y se filtra como un tipo aparte ("wp", "wc", "mp"); "#webpanel" o "#web" los traen a todos.
-        /// </summary>
-        public TypeInfo WebPanelVariant(string name, params string[] aliases) => new TypeInfo
-        {
-            Id = Id,
-            Name = name,
-            Aliases = aliases.Concat(new[] { "webpanel", "web" }).ToArray(),
-            Descriptor = Descriptor,
-        };
-
-        public const string WebPanelInternalName = "WebPanel";
-
-        public TypeInfo WebComponentVariant() => WebPanelVariant("Web Component", "wc", "webcomponent", "web component", "component", "componente");
-
-        public TypeInfo MasterPageVariant() => WebPanelVariant("Master Page", "mp", "masterpage", "master page", "master");
-
-        /// <summary>Si no se pudo saber cuáles son componentes: "wc" y "mp" traen todos los Web Panels.</summary>
-        public void AddWebPanelFallbackAliases() => Aliases = Aliases.Concat(new[] { "wc", "mp" }).Distinct().ToArray();
-
         static readonly Dictionary<string, string[]> KnownAliases = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase)
         {
             ["Procedure"] = new[] { "prc", "proc" },
             ["Transaction"] = new[] { "trn", "trx" },
             ["WebPanel"] = new[] { "wp", "wbp" },
+            ["WebComponent"] = new[] { "wc", "componente" },
+            ["MasterPage"] = new[] { "mp", "master" },
             ["DataProvider"] = new[] { "dp" },
             ["SDT"] = new[] { "sdt" },
             ["Domain"] = new[] { "dom" },
@@ -77,8 +58,10 @@ namespace GxQuickOpen
         /// <summary>
         /// Abreviaturas de un tipo: el nombre interno y el visible (con y sin espacios), las iniciales
         /// ("Web Panel" → "wp", "Structured Data Type" → "sdt") y las conocidas (Procedure → "prc").
+        /// Un tipo derivado (Web Component, Master Page) también responde al nombre del base: "#webpanel"
+        /// o "#web" traen los tres.
         /// </summary>
-        public static string[] BuildAliases(string internalName, string displayName)
+        public static string[] BuildAliases(string internalName, string displayName, string baseName = null)
         {
             var aliases = new List<string>();
             void Add(string alias)
@@ -97,6 +80,7 @@ namespace GxQuickOpen
             if (internalName != null && KnownAliases.TryGetValue(internalName, out string[] known))
                 foreach (string alias in known)
                     Add(alias);
+            Add(baseName);
             return aliases.Distinct().ToArray();
         }
 

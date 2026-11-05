@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Package xmlns="http://schemas.genexus.com/addin/v1.0" id="2CEDD3C4-6C5F-4292-AFB0-71E1BC0A19B0" name="GxModuleCache">
+  <Resources>
+    <Resource type="strings" name="GxModuleCache.Messages" />
+  </Resources>
+
+  <!-- Sin comandos propios: el botón lo agrega ModuleCacheButton a la pantalla Manage Module References -->
+  <Commands>
+    <CommandDefinition id="GxModuleCacheOptions" resourceId="CmdOptions" />
+  </Commands>
+
+  <Groups>
+    <Group id="GxModuleCacheToolsGroup">
+      <Command refid="GxModuleCacheOptions" />
+    </Group>
+  </Groups>
+
+  <Menus>
+    <Menu type="menubar">
+      <Popup name="Tools" refid="ToolsMenu">
+        <Group refid="GxModuleCacheToolsGroup" />
+      </Popup>
+    </Menu>
+  </Menus>
+</Package>

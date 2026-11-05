@@ -3,8 +3,8 @@
     <RootNamespace>GxQuickVar</RootNamespace>
     <AssemblyName>GxQuickVar</AssemblyName>
     <AssemblyTitle>GxQuickVar</AssemblyTitle>
-    <Description>Declara la &amp;variable bajo el cursor y le asigna el tipo desde un desplegable</Description>
-    <Version>1.5.3</Version>
+    <Description>Declara la &amp;variable bajo el cursor (o en la pestaña Variables, Properties y los patterns) y le asigna el tipo desde un desplegable</Description>
+    <Version>1.5.7</Version>
     <FileVersion>$(Version).0</FileVersion>
   </PropertyGroup>
 
@@ -25,6 +25,36 @@
     </Reference>
     <Reference Include="ActiproSoftware.Shared.Net20">
       <HintPath>$(GX_PROGRAM_DIR)\ActiproSoftware.Shared.Net20.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <!-- Pestaña Variables: la grilla (StructEditor sobre un TreeList de DevExpress) -->
+    <Reference Include="Artech.Packages.StructureEditors">
+      <HintPath>$(GX_PROGRAM_DIR)\Packages\Artech.Packages.StructureEditors.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Artech.Editors.Common">
+      <HintPath>$(GX_PROGRAM_DIR)\Packages\Artech.Editors.Common.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <!-- Variables de las instancias de pattern (WorkWithPlus) -->
+    <Reference Include="Artech.Packages.Patterns">
+      <HintPath>$(GX_PROGRAM_DIR)\Packages\Artech.Packages.Patterns.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Artech.Packages.Patterns.UI">
+      <HintPath>$(GX_PROGRAM_DIR)\Packages\Artech.Packages.Patterns.UI.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="DevExpress.XtraTreeList.v7.3">
+      <HintPath>$(GX_PROGRAM_DIR)\DevExpress.XtraTreeList.v7.3.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="DevExpress.XtraEditors.v7.3">
+      <HintPath>$(GX_PROGRAM_DIR)\DevExpress.XtraEditors.v7.3.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="DevExpress.Utils.v7.3">
+      <HintPath>$(GX_PROGRAM_DIR)\DevExpress.Utils.v7.3.dll</HintPath>
       <Private>false</Private>
     </Reference>
   </ItemGroup>

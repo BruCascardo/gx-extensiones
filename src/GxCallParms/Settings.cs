@@ -23,6 +23,9 @@ namespace GxCallParms
         static bool s_AutoFill = true;
         static bool s_CallToUdp = true;
         static bool s_LogEnabled = true;
+        static bool s_AskEachParameter = true;
+        static List<string> s_Presets = new List<string>(GxCallParms.Presets.Defaults);
+        static bool s_PresetsLoaded;
 
         /// <summary>Atajo para completar la llamada bajo el cursor (Keys.None = sin atajo).</summary>
         public static Keys FillKey { get { Load(); return s_FillKey; } set { s_FillKey = value; } }
@@ -35,6 +38,15 @@ namespace GxCallParms
         /// &amp;Salida = Objeto.udp(...), igual que un .udp(.
         /// </summary>
         public static bool CallToUdp { get { Load(); return s_CallToUdp; } set { s_CallToUdp = value; } }
+
+        /// <summary>
+        /// Preguntar qué se pasa en cada parámetro (variables del mismo tipo, valores del dominio...). Si no,
+        /// se usan los nombres de la regla parm del objeto llamado.
+        /// </summary>
+        public static bool AskEachParameter { get { Load(); return s_AskEachParameter; } set { s_AskEachParameter = value; } }
+
+        /// <summary>Valores predefinidos por objeto, una línea por objeto (ver <see cref="GxCallParms.Presets"/>).</summary>
+        public static List<string> Presets { get { Load(); return s_Presets; } set { s_Presets = value; } }
 
         /// <summary>Registro de diagnóstico en %APPDATA%\GxCallParms\log.txt.</summary>
         public static bool LogEnabled { get { Load(); return s_LogEnabled; } set { s_LogEnabled = value; } }
@@ -69,6 +81,19 @@ namespace GxCallParms
                         case "Log":
                             s_LogEnabled = value != "false";
                             break;
+                        case "AskEachParameter":
+                            s_AskEachParameter = value != "false";
+                            break;
+                        case "Preset":
+                            // La primera línea reemplaza los de fábrica; "Preset=" solo indica que se borraron todos
+                            if (!s_PresetsLoaded)
+                            {
+                                s_PresetsLoaded = true;
+                                s_Presets = new List<string>();
+                            }
+                            if (value.Length > 0)
+                                s_Presets.Add(value);
+                            break;
                     }
                 }
             }
@@ -83,13 +108,16 @@ namespace GxCallParms
             try
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(FilePath));
-                File.WriteAllLines(FilePath, new[]
+                var lines = new List<string>
                 {
                     "FillShortcut=" + Shortcuts.Format(s_FillKey),
                     "AutoFill=" + (s_AutoFill ? "true" : "false"),
                     "CallToUdp=" + (s_CallToUdp ? "true" : "false"),
+                    "AskEachParameter=" + (s_AskEachParameter ? "true" : "false"),
                     "Log=" + (s_LogEnabled ? "true" : "false"),
-                }, Encoding.UTF8);
+                };
+                lines.AddRange(s_Presets.Count > 0 ? s_Presets.Select(p => "Preset=" + p) : new[] { "Preset=" });
+                File.WriteAllLines(FilePath, lines, Encoding.UTF8);
             }
             catch (Exception ex)
             {

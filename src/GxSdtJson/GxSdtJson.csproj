@@ -4,7 +4,7 @@
     <AssemblyName>GxSdtJson</AssemblyName>
     <AssemblyTitle>GxSdtJson</AssemblyTitle>
     <Description>Copia la estructura de un SDT como JSON y genera la estructura a partir de un JSON</Description>
-    <Version>1.1.2</Version>
+    <Version>1.1.3</Version>
     <FileVersion>$(Version).0</FileVersion>
   </PropertyGroup>
 

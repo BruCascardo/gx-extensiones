@@ -184,35 +184,49 @@ namespace GxQuickVar
                 return PopupOutcome.Skipped;
             }
 
+            PopupOptions options = CreateOptions(context.Model, context.Part.KBObject, name, existing,
+                text => ApplyToPart(context.Model, context.Part, name, text), context.Palette, context.SyntaxEditor.Font);
+            options.BatchIndex = batchIndex;
+            options.BatchCount = batchCount;
+            return ShowPopup(options, size => PopupLocation(context.SyntaxEditor, token, size), context.Editor.FindForm());
+        }
+
+        /// <summary>Opciones del desplegable para declarar o cambiarle el tipo a &amp;<paramref name="name"/>.</summary>
+        internal static PopupOptions CreateOptions(KBModel model, KBObject obj, string name, Variable existing,
+            Func<string, string> apply, Palette palette, Font codeFont)
+        {
             var options = new PopupOptions
             {
                 VariableName = name,
                 AlreadyDeclared = existing != null && !existing.IsAutoDefined,
-                Types = TypeCatalog.Get(context.Model),
-                Recents = ValidRecents(context.Model),
-                ModulePath = context.Part.KBObject.QualifiedName.ModuleName ?? string.Empty,
-                ModuleTypes = TypeCatalog.ModuleSdts(context.Model, context.Part.KBObject.QualifiedName.ModuleName),
-                Apply = text => Apply(context, name, text),
-                Describe = entry => TypeCatalog.Describe(context.Model, entry),
-                AllAttributes = () => TypeCatalog.AllAttributes(context.Model),
-                FindAttributes = prefix => TypeCatalog.FindAttributes(context.Model, prefix),
-                BatchIndex = batchIndex,
-                BatchCount = batchCount,
-                Palette = context.Palette,
-                CodeFont = context.SyntaxEditor.Font,
+                Types = TypeCatalog.Get(model),
+                Recents = ValidRecents(model),
+                ModulePath = obj.QualifiedName.ModuleName ?? string.Empty,
+                ModuleTypes = TypeCatalog.ModuleSdts(model, obj.QualifiedName.ModuleName),
+                Apply = apply,
+                Describe = entry => TypeCatalog.Describe(model, entry),
+                AllAttributes = () => TypeCatalog.AllAttributes(model),
+                FindAttributes = prefix => TypeCatalog.FindAttributes(model, prefix),
+                Palette = palette,
+                CodeFont = codeFont,
             };
-            Suggest(context, name, existing, options);
+            Suggest(model, name, existing, options);
+            return options;
+        }
 
+        /// <summary>Muestra el desplegable donde diga <paramref name="locate"/> (recibe su tamaño) y espera a que se cierre.</summary>
+        internal static PopupOutcome ShowPopup(PopupOptions options, Func<Size, Point> locate, IWin32Window owner)
+        {
             using (var popup = new TypePopup(options))
             {
-                popup.Location = PopupLocation(context.SyntaxEditor, token, popup.Size);
-                popup.ShowDialog(context.Editor.FindForm());
+                popup.Location = locate(popup.Size);
+                popup.ShowDialog(owner);
                 return popup.Outcome;
             }
         }
 
         /// <summary>Texto inicial del desplegable y el porqué.</summary>
-        static void Suggest(Context context, string name, Variable existing, PopupOptions options)
+        static void Suggest(KBModel model, string name, Variable existing, PopupOptions options)
         {
             if (existing != null)
             {
@@ -229,7 +243,7 @@ namespace GxQuickVar
 
             // Antes de grabar GeneXus todavía no la autodefinió: si hay un atributo que se llama igual,
             // proponer lo mismo que va a asumir al grabar.
-            var sameNameAttribute = Artech.Genexus.Common.Objects.Attribute.Get(context.Model, name);
+            var sameNameAttribute = Artech.Genexus.Common.Objects.Attribute.Get(model, name);
             if (sameNameAttribute != null)
             {
                 options.InitialText = TypeSyntax.AttributePrefix + sameNameAttribute.Name;
@@ -240,7 +254,7 @@ namespace GxQuickVar
             if (Settings.RememberByName)
             {
                 string remembered = History.TypeFor(name);
-                if (remembered != null && TypeCatalog.IsKnown(context.Model, remembered))
+                if (remembered != null && TypeCatalog.IsKnown(model, remembered))
                 {
                     options.InitialText = remembered;
                     options.Hint = $"Sugerido: es el tipo que usaste la última vez para &{name}";
@@ -250,7 +264,7 @@ namespace GxQuickVar
 
             if (Settings.SuggestByName)
             {
-                TypeEntry sameName = TypeCatalog.FindExact(context.Model, name);
+                TypeEntry sameName = TypeCatalog.FindExact(model, name);
                 if (sameName != null && sameName.Group != TypeGroup.Other)
                 {
                     options.InitialText = sameName.Name;
@@ -297,15 +311,12 @@ namespace GxQuickVar
             return true;
         }
 
-        /// <summary>Aplica el tipo escrito. Devuelve el mensaje de error, o null si salió bien.</summary>
-        static string Apply(Context context, string name, string typeText)
+        /// <summary>
+        /// Declara &amp;<paramref name="name"/> en la parte de variables con el tipo escrito, o le cambia el tipo
+        /// si ya existe. Devuelve el mensaje de error, o null si salió bien.
+        /// </summary>
+        internal static string ApplyToPart(KBModel model, VariablesPart part, string name, string typeText)
         {
-            string typed = typeText;
-            bool collection = TypeSyntax.StripCollection(ref typeText);
-            if (typeText.Length == 0)
-                return "Escribí un tipo";
-
-            VariablesPart part = context.Part;
             Variable variable = part.GetVariable(name);
             bool isNew = variable == null;
             if (isNew)
@@ -315,22 +326,62 @@ namespace GxQuickVar
                 DataType.SetDefault(variable);
             }
 
-            string error = TypeSyntax.TryParseAttribute(typed, out string attributeName)
-                ? SetAttribute(context.Model, variable, attributeName)
-                : SetType(context.Model, variable, typeText) ? null : $"Tipo inválido: {typeText}";
+            string error = ApplyType(model, variable, typeText);
             if (error != null)
                 return error;
 
-            variable.IsCollection = collection;
             if (isNew)
                 part.Variables.Add(variable);
-            else
-                variable.IsAutoDefined = false;
-
             MarkModified(part);
-            History.Record(name, TypeCatalog.Normalize(context.Model, typed));
-            Status($"GxQuickVar: &{name} declarada como {TypeText(variable)}");
+            Declared(model, name, typeText, variable);
             return null;
+        }
+
+        /// <summary>
+        /// Le asigna a la variable el tipo escrito ("VarChar(100)", "sdtX collection", "att ClienteId"...) y la deja
+        /// declarada (si era autodefinida, deja de serlo). Si no se puede, la deja como estaba. Devuelve el mensaje
+        /// de error, o null si salió bien.
+        /// </summary>
+        internal static string ApplyType(KBModel model, Variable variable, string typeText)
+        {
+            string typed = typeText;
+            bool collection = TypeSyntax.StripCollection(ref typeText);
+            if (typeText.Length == 0)
+                return "Escribí un tipo";
+
+            // Asignar el tipo toca varias propiedades: si falla a mitad de camino no tiene que quedar a medias
+            VariableSnapshot before = VariableSnapshot.Take(variable);
+            string error;
+            try
+            {
+                error = TypeSyntax.TryParseAttribute(typed, out string attributeName)
+                    ? SetAttribute(model, variable, attributeName)
+                    : SetType(model, variable, typeText) ? null : $"Tipo inválido: {typeText}";
+                if (error == null)
+                {
+                    // Solo si cambia: si no, la propiedad queda escrita aunque tenga el valor por defecto
+                    if (variable.IsCollection != collection)
+                        variable.IsCollection = collection;
+                    if (variable.IsAutoDefined)
+                        variable.IsAutoDefined = false;
+                    VariableSnapshot.ForgetStaleDomain(variable);   // si estaba basada en un dominio y ya no
+                }
+            }
+            catch (Exception)
+            {
+                before.RestoreInto(variable);
+                throw;
+            }
+            if (error != null)
+                before.RestoreInto(variable);
+            return error;
+        }
+
+        /// <summary>Recuerda el tipo elegido para la próxima vez y lo informa en la barra de estado.</summary>
+        internal static void Declared(KBModel model, string name, string typeText, Variable variable)
+        {
+            History.Record(name, TypeCatalog.Normalize(model, typeText));
+            Status($"GxQuickVar: &{name} declarada como {TypeText(variable)}");
         }
 
         /// <summary>
@@ -383,6 +434,11 @@ namespace GxQuickVar
                     return SetDomain(model, variable, domain);
             }
 
+            // ParseInto acepta "Domain:X" de un dominio que no existe (la deja basada en "(none)") y
+            // "VarChar(abc)" (le pone el largo por defecto): los dos son un error de tipeo
+            if (TypeSyntax.BaseName(typeText, out _).StartsWith("Domain:", StringComparison.OrdinalIgnoreCase)
+                || !TypeSyntax.HasValidParameters(typeText))
+                return false;
             return DataType.ParseInto(model, typeText, variable);
         }
 
@@ -430,7 +486,7 @@ namespace GxQuickVar
             return IsBasedOnIt();
         }
 
-        static void MarkModified(VariablesPart part)
+        internal static void MarkModified(VariablesPart part)
         {
             part.OnInvalidate();
             if (UIServices.DocumentManager.IsOpenDocument(part.KBObject, out IGxDocument document))
@@ -442,7 +498,7 @@ namespace GxQuickVar
             }
         }
 
-        static string TypeText(Variable variable)
+        internal static string TypeText(Variable variable)
         {
             var attribute = variable.AttributeBasedOn;
             string text = attribute != null ? TypeSyntax.AttributePrefix + attribute.Name : new DataType(variable).ToString();
@@ -452,17 +508,27 @@ namespace GxQuickVar
         static Point PopupLocation(SyntaxEditor syntaxEditor, IToken token, Size popupSize)
         {
             Rectangle bounds = syntaxEditor.SelectedView.GetCharacterBounds(token.StartOffset);
-            Point location = syntaxEditor.PointToScreen(new Point(bounds.Left, bounds.Bottom + 4));
+            return PlaceNear(syntaxEditor.RectangleToScreen(bounds), popupSize, alignRight: false);
+        }
 
-            Rectangle screen = Screen.FromPoint(location).WorkingArea;
+        /// <summary>
+        /// Debajo de <paramref name="anchor"/> (en coordenadas de pantalla), o arriba si no entra; alineado a su
+        /// borde izquierdo o derecho, sin salirse de la pantalla.
+        /// </summary>
+        internal static Point PlaceNear(Rectangle anchor, Size popupSize, bool alignRight)
+        {
+            var location = new Point(alignRight ? anchor.Right - popupSize.Width : anchor.Left, anchor.Bottom + 4);
+
+            Rectangle screen = Screen.FromRectangle(anchor).WorkingArea;
             if (location.X + popupSize.Width > screen.Right)
-                location.X = Math.Max(screen.Left, screen.Right - popupSize.Width);
+                location.X = screen.Right - popupSize.Width;
+            location.X = Math.Max(screen.Left, location.X);
             if (location.Y + popupSize.Height > screen.Bottom)
-                location.Y = Math.Max(screen.Top, syntaxEditor.PointToScreen(new Point(0, bounds.Top)).Y - popupSize.Height - 4);
+                location.Y = Math.Max(screen.Top, anchor.Top - popupSize.Height - 4);
             return location;
         }
 
-        static void Status(string message)
+        internal static void Status(string message)
         {
             if (UIServices.IsStatusBarAvailable)
                 UIServices.StatusBar.DisplayText(message);

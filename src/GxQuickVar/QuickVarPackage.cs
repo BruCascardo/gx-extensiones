@@ -8,6 +8,7 @@ using Artech.Architecture.UI.Framework.Packages;
 using Artech.Architecture.UI.Framework.Services;
 using Artech.Common.Framework.Commands;
 using Artech.Genexus.Common;
+using Artech.Genexus.UI.Common.Editor;
 using Microsoft.Practices.CompositeUI.EventBroker;
 
 [assembly: Package(typeof(GxQuickVar.QuickVarPackage))]
@@ -31,7 +32,7 @@ namespace GxQuickVar
         public override void Initialize(IGxServiceProvider services)
         {
             base.Initialize(services);
-            AddCommand(DeclareCommand, data => { VariableDeclarer.Run(data); return true; }, QueryEditorCommand);
+            AddCommand(DeclareCommand, ExecDeclare, QueryDeclare);
             AddCommand(DeclareAllCommand, data => { VariableDeclarer.RunAll(data); return true; }, QueryEditorCommand);
             AddCommand(OptionsCommand, data => { UIServices.ToolsOptions.ShowOptions("GxQuickVar"); return true; }, QueryAlwaysEnabled);
         }
@@ -43,8 +44,8 @@ namespace GxQuickVar
             // Los atajos se leen de la configuración en cada tecla, así un cambio en
             // Tools > Options se aplica sin reiniciar GeneXus.
             m_KeyFilter = new KeyBindingFilter();
-            m_KeyFilter.Add(() => Settings.DeclareKey, () => VariableDeclarer.Run(null));
-            m_KeyFilter.Add(() => Settings.DeclareAllKey, () => VariableDeclarer.RunAll(null));
+            m_KeyFilter.Add(() => Settings.DeclareKey, DeclareFor);
+            m_KeyFilter.Add(() => Settings.DeclareAllKey, focused => IsEditableCode(focused) ? () => VariableDeclarer.RunAll(null) : (Action)null);
             Application.AddMessageFilter(m_KeyFilter);
 
             try
@@ -80,6 +81,46 @@ namespace GxQuickVar
         public void OnKBClosed(object sender, EventArgs args)
         {
             TypeCatalog.Clear();
+        }
+
+        static bool IsEditableCode(Control focused)
+        {
+            var editor = EditorLocator.From(focused);
+            return editor != null && !editor.ReadOnly;
+        }
+
+        /// <summary>
+        /// Declarar según dónde esté el foco: la &amp;variable bajo el cursor en un editor de código, la fila
+        /// de la pestaña Variables, la variable que muestra Properties o la variable de un pattern.
+        /// </summary>
+        static Action DeclareFor(Control focused)
+        {
+            if (EditorLocator.From(focused) != null)
+                return IsEditableCode(focused) ? () => VariableDeclarer.Run(null) : (Action)null;
+            return VariablesGrid.ForFocus(focused) ?? PatternVariables.ForFocus(focused);
+        }
+
+        /// <summary>Desde un menú: el control que lo pidió (el menú contextual de la grilla) o el que tiene el foco.</summary>
+        static Action DeclareFor(CommandData data)
+        {
+            if (data?.Context is GxTextEditor editor)
+                return editor.ReadOnly ? null : (Action)(() => VariableDeclarer.Run(data));
+            Control focused = EditorLocator.FocusedControl();
+            return (data?.Context is Control context ? DeclareFor(context) : null)
+                ?? (focused != null ? DeclareFor(focused) : null);
+        }
+
+        static bool ExecDeclare(CommandData data)
+        {
+            Action action = DeclareFor(data);
+            action?.Invoke();
+            return action != null;
+        }
+
+        static bool QueryDeclare(CommandData data, ref CommandStatus status)
+        {
+            status.State = DeclareFor(data) != null ? CommandState.Enabled : CommandState.Disabled;
+            return true;
         }
 
         static bool QueryEditorCommand(CommandData data, ref CommandStatus status)

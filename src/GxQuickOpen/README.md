@@ -108,7 +108,9 @@ lo mismo que quedó instalado. `.\pack.ps1 -SubirVersion` hace lo mismo sin inst
 - `QuickOpenPackage`: package UI (comandos, menú, página de opciones, hook de teclado, eventos de la KB).
 - `KeyboardHook`: hook de teclado del hilo de la interfaz. Hace falta porque la barra de menús de GeneXus
   procesa Ctrl+O antes que cualquier `IMessageFilter`; el hook ve la tecla primero y la descarta solo si
-  es el atajo configurado y la ventana principal está activa sin diálogos abiertos.
+  es el atajo configurado y la ventana principal está activa sin diálogos abiertos. Las teclas de los
+  controles web (el Output es un Monaco en CefSharp) no pasan por el hook: GeneXus las reenvía con
+  `Application.FilterMessage`, así que además es un `IMessageFilter` puesto primero en la lista.
 - `ObjectIndex`: los objetos abribles, de la misma caché que usa el Ctrl+O de GeneXus
   (`UIServices.Objects.Cache`); se arma en segundo plano y se rehace al cambiar la caché o grabar/borrar.
 - `Matcher`: búsqueda y orden (sin dependencias de GeneXus). `QuickOpenPopup` / `Theme`: la ventana.

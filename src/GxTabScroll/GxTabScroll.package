@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Package xmlns="http://schemas.genexus.com/addin/v1.0" id="5DE9FEF7-9006-48F2-8351-C0F00B83E303" name="GxTabScroll">
+  <Resources>
+    <Resource type="strings" name="GxTabScroll.Messages" />
+  </Resources>
+
+  <!-- Sin comandos de edición: la rueda la atiende WheelFilter y Ctrl+W, KeyFilter -->
+  <Commands>
+    <CommandDefinition id="GxTabScrollOptions" resourceId="CmdOptions" />
+  </Commands>
+
+  <Groups>
+    <Group id="GxTabScrollToolsGroup">
+      <Command refid="GxTabScrollOptions" />
+    </Group>
+  </Groups>
+
+  <Menus>
+    <Menu type="menubar">
+      <Popup name="Tools" refid="ToolsMenu">
+        <Group refid="GxTabScrollToolsGroup" />
+      </Popup>
+    </Menu>
+  </Menus>
+</Package>

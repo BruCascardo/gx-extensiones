@@ -20,17 +20,24 @@ namespace GxQuickVar
             return FromFocus();
         }
 
-        public static GxTextEditor FromFocus()
+        public static GxTextEditor FromFocus() => From(FocusedControl());
+
+        /// <summary>El editor de código que contiene al control, o null.</summary>
+        public static GxTextEditor From(Control control)
         {
-            IntPtr handle = GetFocus();
-            if (handle == IntPtr.Zero)
-                return null;
-            for (Control c = Control.FromChildHandle(handle); c != null; c = c.Parent)
+            for (Control c = control; c != null; c = c.Parent)
             {
                 if (c is GxTextEditor editor)
                     return editor;
             }
             return null;
+        }
+
+        /// <summary>El control de WinForms que tiene el foco (o el que contiene a la ventana que lo tiene), o null.</summary>
+        public static Control FocusedControl()
+        {
+            IntPtr handle = GetFocus();
+            return handle == IntPtr.Zero ? null : Control.FromChildHandle(handle);
         }
 
         public static ActiproSoftware.SyntaxEditor.SyntaxEditor FindSyntaxEditor(Control root)

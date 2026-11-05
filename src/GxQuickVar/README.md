@@ -5,6 +5,23 @@ Source, Rules o Conditions, **Alt+V** abre un desplegable junto al cursor para e
 y la declara sin pasar por "Add variable" ni por las properties.
 **Alt+Shift+V** recorre todas las variables del editor que todavía no están declaradas.
 
+El mismo desplegable sirve para cambiarle el tipo a una variable ya declarada en cualquier objeto
+(procedimientos, web panels, transacciones, data providers...):
+
+- **Pestaña Variables**: parado en la fila de la variable, **Alt+V** (o clic derecho > *Declarar variable*)
+  abre el desplegable junto a la celda Type. Si estabas escribiendo el nombre de una variable nueva, primero
+  lo confirma. El cambio se deshace con **Ctrl+Z** como cualquier edición de la grilla.
+- **Properties**: con una variable seleccionada (por ejemplo, desde la pestaña Variables), **Alt+V** con el
+  foco en Properties abre el desplegable ahí. Si la variable está en una pestaña Variables abierta, el cambio
+  pasa por esa grilla (y también se deshace con Ctrl+Z); si no, se asigna directo, como hace Properties.
+- **Patterns (WorkWithPlus)**: con una variable de la instancia seleccionada (en el árbol del pattern o en
+  Properties), **Alt+V** abre el desplegable. El tipo se escribe igual que en el resto y queda en la
+  *Type Definition* de la variable: un tipo básico pone `Data Type = Basic` con su `Type`, largo y decimales;
+  un dominio, atributo, SDT, BC u objeto externo pone `Data Type = Based on` y lo elige en
+  *Domain, Attribute or SDT*. Los atributos que dejan de aplicar vuelven a su valor por defecto. Es un solo paso
+  de Ctrl+Z del pattern. WorkWithPlus no admite colecciones ni números con signo en sus variables: en esos casos
+  avisa en vez de dejarla a medias (para un número con signo, usá un dominio).
+
 Los atajos se cambian en **Tools > Options > GxQuickVar** (también en *Tools > Opciones de GxQuickVar...*).
 
 ## El desplegable
@@ -100,9 +117,20 @@ lo mismo que quedó instalado. `.\pack.ps1 -SubirVersion` hace lo mismo sin inst
 
 - `QuickVarPackage`: package UI (comandos, menús, página de opciones, filtro de teclado, invalidación del catálogo).
 - `KeyBindingFilter`: atajos configurables. Los del manifiesto son fijos y el enum `Shortcut` de WinForms
-  no admite Alt+letra, así que se interceptan los mensajes de teclado solo cuando el foco está en un editor de código.
+  no admite Alt+letra, así que se interceptan los mensajes de teclado solo cuando el foco está donde el atajo
+  tiene algo que hacer (un editor de código, la pestaña Variables, Properties con una variable); si no, la tecla sigue su camino.
 - `VariableDeclarer`: replica `GxTextEditor.ExecuteAddVariable` de GeneXus; el tipo se asigna con el
   `DataTypeCaps` del catálogo (como el combo de la grilla de variables) o con `DataType.ParseInto` para `VarChar(100)` y similares.
+  Si asignarlo falla a mitad de camino, la variable queda como estaba.
+- `VariablesGrid`: la pestaña Variables (`VariablesEditor`) y la ventana Properties (`IPropertyInspector`). En la
+  grilla el tipo se asigna con un comando propio de la grilla (`StructCommand`), así entra en su deshacer/rehacer y
+  marca el objeto como modificado, igual que al editar la celda Type.
+- `PatternVariables`: las variables de una instancia de pattern. Interpreta el texto sobre una variable de prueba
+  (con la misma lógica que el resto) y lo traduce a los atributos `dataType`, `domain`, `basicType`,
+  `basicLength`, `basicDecimals`, `basicCLength` y `basicLVCLength`, dentro de `ExecuteUpdate` para que sea un
+  solo paso del deshacer del pattern.
+- `VariableSnapshot`: guarda las propiedades de la variable como texto (como se guardan en la KB) para deshacer,
+  rehacer, o dejarla como estaba si algo falla.
 - `TypeMatcher`: búsqueda y puntaje (las mismas reglas que GxQuickOpen, sin dependencias de GeneXus).
 - `TypeCatalog`: misma fuente que el combo de tipos de GeneXus (`GenexusUIServices.DataTypes.GetSortedTypes`);
   los atributos salen de la caché de objetos del Ctrl+O (`UIServices.Objects.Cache`) y su tipo se lee al mostrarlos.

@@ -15,6 +15,11 @@ El instalador copia los zip elegidos a C:\Packages, los descomprime y los instal
 alguno ya está instalado y al día, lo saltea. Para actualizar cuando haya versiones nuevas en esta
 carpeta, se hace lo mismo.
 
+Desde la carpeta installer del repo (con el código fuente al lado, en src) no usa zips: corre el
+deploy.ps1 de cada extensión elegida, lo mismo que su Instalar.cmd (sube la versión, compila, arma
+el zip en dist y copia el DLL), y registra en GeneXus una sola vez al final. Así nunca instala algo
+viejo. Hace falta el .NET SDK.
+
 Si algo falla:
 - "Sin permiso para escribir...": clic derecho en InstalarPackages.exe > Ejecutar como administrador.
 - "No encontré GeneXus 18 U15" o "Encontré varias instalaciones": abrir una consola en esta carpeta
@@ -25,15 +30,26 @@ Si algo falla:
 - Sin menú (para scripts):  InstalarPackages.exe -Paquetes all   o   -Paquetes "GxQuickVar,GxSdtJson"
 
 Qué hace cada package:
-- GxCallParms: al escribir Objeto.call( u Objeto.udp( completa los parámetros y declara las variables.
+- GxCallParms: al escribir Objeto.call( u Objeto.udp( sugiere qué pasar en cada parámetro mientras se escribe y declara las variables nuevas.
+- GxCodeCheck: al guardar subraya en el código los errores de sintaxis y, con un
+  chequeo rápido propio, los de tipos y parámetros y lo que no sigue el estándar del equipo; con el mouse encima explica el error, se puede copiar y ofrece la corrección (Ctrl+. con el teclado).
+  En Tools, revisa lo modificado, un módulo o la KB entera sin build.
 - GxCodeKeys: atajos de teclado para el editor de código (Tools > Options > GxCodeKeys).
+- GxEnumValues: en el diálogo Enum Values de dominios y atributos, barra de búsqueda (Ctrl+F) que
+  filtra por nombre, descripción y valor; clic en los encabezados para ordenar.
+- GxKbRefs: en la ventana References, checkbox "Otras KBs" que agrega quién referencia al objeto en
+  las demás KBs del servidor, agrupado por KB y con las flechas para seguir expandiendo.
+- GxModuleCache: en Manage Module References, botón "Limpiar caché" que borra la caché local de
+  NuGet y vuelve a cargar los módulos (para cuando un módulo recién subido todavía no aparece).
 - GxOpenWeb:  clic derecho en la pestaña de un Web Panel > Abrir > Local, CI o Preprod lo abre en el
   navegador.
 - GxQuickOpen: Ctrl+O con búsqueda instantánea de objetos y el módulo de cada uno a la vista.
-- GxQuickVar: Alt+V declara la &variable bajo el cursor eligiendo el tipo de un desplegable.
+- GxQuickVar: Alt+V declara la &variable bajo el cursor eligiendo el tipo de un desplegable (también en la pestaña Variables, en Properties y en los patterns).
 - GxSdtExpand: Alt+S sobre una &variable SDT o Business Component escribe New() y una asignación
   por miembro con los = alineados; Alt+Shift+S despliega todo, colecciones y subestructuras incluidas.
 - GxSdtJson:  al abrir un SDT, barra "SDT JSON" para copiar la estructura como JSON e importarla en otro.
+- GxTabScroll: la rueda del mouse sobre las pestañas de objetos desplaza la barra cuando no entran
+  todas, como en VS Code; Shift+rueda cambia de pestaña y Ctrl+W cierra la pestaña donde está el foco.
 
 Para mantenerlo (no hace falta copiarlo a la carpeta compartida): InstalarPackages.exe trae adentro
 InstalarPackages.ps1. Si se cambia el .ps1 hay que correr Compilar.ps1 para rearmar el exe. La

@@ -8,10 +8,13 @@ using Artech.Architecture.Common.Services;
 using Artech.Architecture.UI.Framework.Objects;
 using Artech.Architecture.UI.Framework.Services;
 using Artech.Common.Framework.Commands;
+using Artech.Common.Helpers.Structure;
+using Artech.Common.Properties;
 using Artech.Genexus.Common;
 using Artech.Genexus.Common.CustomTypes;
 using Artech.Genexus.Common.Objects;
 using Artech.Genexus.Common.Parts;
+using Artech.Genexus.Common.Parts.SDT;
 using Artech.Genexus.Common.Parts.Variables;
 using Artech.Genexus.Common.Types;
 using Artech.Genexus.UI.Common.Editor;
@@ -21,11 +24,12 @@ using Group = System.Text.RegularExpressions.Group;
 namespace GxCallParms
 {
     /// <summary>
-    /// Completa los parámetros de Objeto.call( / Objeto.udp( con las variables de la regla parm del
-    /// objeto llamado y las declara en el objeto actual con el mismo tipo. Si el objeto tiene un único
+    /// Completa los parámetros de Objeto.call( / Objeto.udp( y declara en el objeto actual, con el tipo del
+    /// parámetro, las variables nuevas: sugiriendo qué pasar en cada lugar mientras se escribe (<see cref="Session"/>)
+    /// o, sin sugerir, con las variables de la regla parm del objeto llamado. Si el objeto tiene un único
     /// parámetro de salida y es el último, queda fuera de los paréntesis: &amp;Salida = Objeto.udp(&amp;Entrada).
     /// </summary>
-    static class CallFiller
+    static partial class CallFiller
     {
         // Objeto(  /  Objeto.call(  /  Modulo.Sub.Objeto.udp(  ; no empieza en una &variable ni en medio
         // de un nombre. El nombre es perezoso para que ".call" / ".udp" quede como método y no como parte de él.
@@ -108,15 +112,17 @@ namespace GxCallParms
         {
             Guard(() =>
             {
-                if (editor.IsDisposed || editor.ReadOnly || !syntaxEditor.ContainsFocus)
-                    return;
+                if (editor.IsDisposed || editor.ReadOnly || !syntaxEditor.ContainsFocus || Session.IsActive(syntaxEditor))
+                    return;   // un "(" dentro de los argumentos de la llamada que se está completando no empieza otra
                 Context context = CreateContext(editor);
                 if (context == null)
                     return;
                 int caret = context.SyntaxEditor.SelectedView.Selection.EndOffset;
                 List<CallSite> sites = FindCallSites(context, caret, typed: true);
-                if (sites.Count > 0)
-                    Fill(context, sites, typed: true);
+                if (sites.Count == 0)
+                    return;
+                Fill(context, sites, typed: true);
+                context.SyntaxEditor.Focus();
             });
         }
 
@@ -270,74 +276,377 @@ namespace GxCallParms
             bool statement = site.Prefix.Trim().Length == 0;
             if (returned != null && site.Kind == CallKind.Call && !assignment.Success && !statement)
                 returned = null;   // un .call dentro de una expresión no se convierte: todos entre paréntesis
+            if (returned != null && !assignment.Success && statement && !Variable.IsValidName(ArgumentName(target, returned)))
+                returned = null;   // sin nombre para la variable de salida: va entre paréntesis
 
-            var declared = new List<string>();
-            var different = new List<string>();
-            var undeclared = new List<string>();
-            void Track(string name, Declaration result)
+            // Un lugar por parámetro entre paréntesis y, si la llamada va sola, el de la variable que recibe la salida
+            List<ParameterPreset> presets = Presets.For(target);
+            Slot NewSlot(Parameter parameter, bool isReturn)
+            {
+                int index = parameters.IndexOf(parameter);
+                return new Slot
+                {
+                    Parameter = parameter,
+                    IsReturn = isReturn,
+                    Default = ArgumentNameOrRaw(target, parameter),
+                    Preset = presets != null && index < presets.Count ? presets[index] : null,
+                };
+            }
+            var slots = parameters.Where(p => p != returned).Select(p => NewSlot(p, false)).ToList();
+            if (returned != null && !assignment.Success && statement)
+                slots.Add(NewSlot(returned, true));
+            bool toUdp = returned != null && site.Kind == CallKind.Call;
+
+            string callText = site.Name + (site.Kind == CallKind.Udp ? "." + UdpMethod : site.Kind == CallKind.Call ? ".call" : string.Empty);
+            if (Settings.AskEachParameter && slots.Count > 0)
+            {
+                // Como el IntelliSense: se completa mientras se escribe, lugar por lugar
+                Session.Start(new Plan
+                {
+                    Context = context,
+                    Site = site,
+                    Target = target,
+                    ParameterCount = parameters.Count,
+                    Slots = slots,
+                    Returned = returned,
+                    AssignedName = returned != null && assignment.Success ? assignment.Groups["var"].Value : null,
+                    CallText = callText,
+                });
+                return;
+            }
+
+            // Sin sugerir: lo predefinido o las variables de la regla parm
+            var declarations = new Declarations();
+            var arguments = new List<string>();
+            string prefix = string.Empty;
+            foreach (Slot slot in slots)
+            {
+                string argument = ToArgument(slot.Automatic, out string variable);
+                if (variable != null)
+                    declarations.Track(variable, Declare(context.Part, variable, slot.Parameter.Object));
+                if (slot.IsReturn)
+                    prefix = argument + " = ";
+                else
+                    arguments.Add(argument);
+            }
+            if (returned != null && assignment.Success)
+            {
+                string name = assignment.Groups["var"].Value;
+                declarations.Track(name, Declare(context.Part, name, returned.Object));
+            }
+
+            if (declarations.Declared.Count > 0)
+                MarkModified(context.Part);
+
+            // El cursor queda en el primer lugar vacío (para escribirlo), o después del ")"
+            string text = string.Join(", ", arguments);
+            int empty = arguments.FindIndex(a => a.Length == 0);
+            int caret = empty < 0 ? -1 : arguments.Take(empty).Sum(a => a.Length + 2);
+
+            ApplyText(context, site, text, toUdp, prefix, caret);
+            Log.Write($"completado {target.Name}: ({text}) salida={(returned == null ? "-" : prefix.Length > 0 ? prefix.Trim() : "asignada/expresión")}");
+            Status(Summary(target, parameters.Count, declarations));
+        }
+
+        /// <summary>Un lugar de la llamada: un parámetro entre paréntesis o la variable que recibe la salida.</summary>
+        sealed class Slot
+        {
+            public Parameter Parameter;
+            /// <summary>La salida que devuelve el udp: se escribe como último argumento y al terminar sale a "&amp;X = ".</summary>
+            public bool IsReturn;
+            /// <summary>La variable que se llama como en la regla parm ("&amp;CliId").</summary>
+            public string Default;
+            public ParameterPreset Preset;
+
+            public bool Fixed => Preset != null && !Preset.Ask;
+
+            /// <summary>La sugerencia que queda elegida en la lista: solo un valor predefinido.</summary>
+            public string Proposed => Preset != null && Preset.Ask ? Preset.Values.FirstOrDefault() ?? string.Empty : string.Empty;
+
+            /// <summary>Lo que va sin preguntar (opción apagada o Ctrl+Enter): lo predefinido o la variable del parm.</summary>
+            public string Automatic => Fixed ? Preset.Values[0] : Preset?.Values.FirstOrDefault() ?? Default;
+        }
+
+        /// <summary>Las variables declaradas al completar, para el resumen de la barra de estado.</summary>
+        sealed class Declarations
+        {
+            public readonly List<string> Declared = new List<string>();
+            public readonly List<string> Different = new List<string>();
+            public readonly List<string> Undeclared = new List<string>();
+
+            public void Track(string name, Declaration result)
             {
                 switch (result)
                 {
-                    case Declaration.Declared: declared.Add(name); break;
-                    case Declaration.Different: different.Add(name); break;
-                    case Declaration.Undeclared: undeclared.Add(name); break;
+                    case Declaration.Declared: Declared.Add(name); break;
+                    case Declaration.Different: Different.Add(name); break;
+                    case Declaration.Undeclared: Undeclared.Add(name); break;
                 }
             }
+        }
 
-            var arguments = new List<string>();
-            foreach (Parameter parameter in parameters)
+        /// <summary>
+        /// Lo que se sugiere para un lugar: los valores predefinidos, los del dominio enumerado (si es de entrada),
+        /// las variables declaradas del mismo tipo, los miembros de SDTs / BCs de ese tipo (cuando ya se leyeron) y,
+        /// al final, la variable del parámetro si todavía no existe.
+        /// </summary>
+        static List<ArgumentOption> SuggestionsFor(Context context, KBObject target, Slot slot, List<Candidate> variables, List<Candidate> members)
+        {
+            Parameter parameter = slot.Parameter;
+            var source = parameter.Object as ITypedObject;
+            string typeText = source != null ? TypeText(source) : string.Empty;
+
+            var options = new List<ArgumentOption>();
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            void Add(string text, string detail, ArgumentKind kind)
             {
-                if (parameter == returned)
-                    continue;
-                string name = ArgumentName(target, parameter);
-                if (!Variable.IsValidName(name))
-                {
-                    arguments.Add(parameter.Name);   // un parámetro que no es variable ni atributo: tal cual
-                    continue;
-                }
-                arguments.Add("&" + name);
-                Track(name, Declare(context.Part, name, parameter.Object));
+                if (text.Length > 0 && options.Count < MaxOptions && seen.Add(text))
+                    options.Add(new ArgumentOption { Text = text, Detail = detail, Kind = kind });
             }
 
-            string prefix = string.Empty;
-            if (returned != null)
+            if (slot.Preset != null)
+                foreach (string value in slot.Preset.Values)
+                    Add(value, "predefinido para " + target.Name, ArgumentKind.Preset);
+
+            Domain domain = !slot.IsReturn && parameter.Accessor == RuleDefinition.ParameterAccess.PARM_IN ? EnumeratedDomain(source) : null;
+            if (domain != null)
             {
-                if (assignment.Success)
+                string reference = DomainReference(context.Caller, domain);
+                foreach (EnumValue value in EnumValuesOf(domain))
+                    Add(reference + "." + value.Name, $"{value.Description} · valor de {domain.Name}", ArgumentKind.EnumValue);
+            }
+
+            if (source != null)
+            {
+                var sourceType = new TypeInfo(source);
+                foreach (Candidate variable in variables)
+                    if (variable.Type.Matches(sourceType))
+                        Add(variable.Path, "variable · " + TypeText(variable.Type.Typed), ArgumentKind.Variable);
+                foreach (Candidate member in members ?? new List<Candidate>())
+                    if (member.Type.Matches(sourceType))
+                        Add(member.Path, "miembro · " + TypeText(member.Type.Typed), ArgumentKind.Member);
+            }
+
+            // La del parámetro si todavía no existe: se sugiere, nunca se escribe sola
+            string own = ToArgument(slot.Default, out string ownName);
+            Variable existing = ownName != null ? context.Part.GetVariable(ownName) : null;
+            if (ownName != null && (existing == null || existing.IsAutoDefined))
+                Add(own, "nueva · se declara como " + typeText, ArgumentKind.NewVariable);
+            return options;
+        }
+
+        static string AccessText(RuleDefinition.ParameterAccess access)
+        {
+            switch (access)
+            {
+                case RuleDefinition.ParameterAccess.PARM_IN: return "in";
+                case RuleDefinition.ParameterAccess.PARM_OUT: return "out";
+                default: return "inout";
+            }
+        }
+
+        static readonly Regex IdentifierRegex = new Regex(@"^&?(?<name>[A-Za-z_]\w*)$", RegexOptions.CultureInvariant);
+
+        // Palabras que no son variables aunque se escriban sin "&"
+        static readonly HashSet<string> Literals = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "true", "false" };
+
+        /// <summary>
+        /// Lo escrito como argumento: un nombre ("Cliente" o "&amp;Cliente") es una variable, que se devuelve en
+        /// <paramref name="variable"/> para declararla; cualquier otra cosa (LogTipo.Debug, &amp;Sdt.Item, 10,
+        /// "texto"...) va tal cual. Vacío queda vacío.
+        /// </summary>
+        static string ToArgument(string text, out string variable)
+        {
+            variable = null;
+            text = (text ?? string.Empty).Trim();
+            Match match = IdentifierRegex.Match(text);
+            if (!match.Success || (text[0] != '&' && Literals.Contains(text)))
+                return text;
+            string name = match.Groups["name"].Value;
+            if (!Variable.IsValidName(name))
+                return text;
+            variable = name;
+            return "&" + name;
+        }
+
+        // ---- Valores de dominios enumerados ----
+
+        static Domain EnumeratedDomain(ITypedObject source)
+        {
+            Domain domain = source as Domain
+                ?? (source as Attribute)?.DomainBasedOn
+                ?? (source as IDomainTypedObject)?.DomainBasedOn
+                ?? (source as IAttributeTypedObject)?.AttributeBasedOn?.DomainBasedOn;
+            return domain != null && domain.IsEnumerated ? domain : null;
+        }
+
+        static List<EnumValue> EnumValuesOf(Domain domain)
+        {
+            try
+            {
+                return (domain.GetPropertyValue(Properties.ATT.EnumValues) as EnumValues)?.Values ?? new List<EnumValue>();
+            }
+            catch (Exception ex)
+            {
+                Log.Write($"valores de {domain.Name}: {ex.Message}");
+                return new List<EnumValue>();
+            }
+        }
+
+        /// <summary>
+        /// Cómo se nombra el dominio desde el objeto actual: solo el nombre si GeneXus lo resuelve así (mismo
+        /// módulo, o la raíz sin otro igual en el módulo), si no calificado ("Sistema.LogTipo").
+        /// </summary>
+        static string DomainReference(KBObject caller, Domain domain)
+        {
+            try
+            {
+                if (caller.Model.Objects.ResolveName(caller.Module, ObjClass.Domain, domain.Name, out ResolveResult result) && result.IsMatch && result.Match != null)
+                    return result.Match.Id == domain.Id ? domain.Name : domain.QualifiedName.ToString();
+                if (string.IsNullOrEmpty(domain.QualifiedName.ModuleName))
+                    return domain.Name;
+            }
+            catch (Exception ex)
+            {
+                Log.Write($"ResolveName dominio {domain.Name}: {ex.Message}");
+            }
+            return domain.QualifiedName.ToString();
+        }
+
+        // ---- Miembros de SDTs / BCs ----
+
+        /// <summary>Una variable del objeto o un miembro de una variable SDT / BC ("&amp;sdtRespuesta.Output") y su tipo.</summary>
+        sealed class Candidate
+        {
+            public string Path;
+            public TypeInfo Type;
+        }
+
+        const int MaxMemberDepth = 3;
+        const int MaxCandidates = 2000;
+        const int MaxOptions = 200;
+
+        /// <summary>Las variables declaradas en el objeto (las autodefinidas no: todavía no tienen tipo propio).</summary>
+        static List<Candidate> VariableCandidates(Context context)
+        {
+            var candidates = new List<Candidate>();
+            foreach (Variable variable in context.Part.Variables)
+                if (!variable.IsAutoDefined)
+                    candidates.Add(new Candidate { Path = "&" + variable.Name, Type = new TypeInfo(variable) });
+            return candidates;
+        }
+
+        /// <summary>
+        /// Los miembros de las variables SDT / BC declaradas (no colecciones), con los subniveles simples y
+        /// los miembros de tipo SDT / BC hasta <see cref="MaxMemberDepth"/> niveles. Los niveles colección no:
+        /// se recorren con un ítem.
+        /// </summary>
+        static List<Candidate> MemberCandidates(Context context)
+        {
+            var candidates = new List<Candidate>();
+            KBModel model = context.Caller.Model;
+            foreach (Variable variable in context.Part.Variables)
+            {
+                if (variable.IsCollection || !IsStructured(variable.Type))
+                    continue;
+                try
                 {
-                    string name = assignment.Groups["var"].Value;
-                    Track(name, Declare(context.Part, name, returned.Object));
+                    IStructureItem structure = ResolveStructure(model, Properties.ATT.GetDataType(variable));
+                    if (structure != null)
+                        AddMembers(model, structure, "&" + variable.Name + ".", 1, new HashSet<string> { Key(structure) }, candidates);
                 }
-                else if (statement)
+                catch (Exception ex)
                 {
-                    string name = ArgumentName(target, returned);
-                    if (Variable.IsValidName(name))
-                    {
-                        prefix = "&" + name + " = ";
-                        Track(name, Declare(context.Part, name, returned.Object));
-                    }
-                    else
-                    {
-                        returned = null;   // sin nombre para la variable de salida: va entre paréntesis
-                        arguments.Add(ArgumentNameOrRaw(target, outputs[0]));
-                    }
+                    Log.Write($"miembros de &{variable.Name}: {ex.Message}");
                 }
             }
-            bool toUdp = returned != null && site.Kind == CallKind.Call;
+            return candidates;
+        }
 
-            if (declared.Count > 0)
-                MarkModified(context.Part);
+        static void AddMembers(KBModel model, IStructureItem structure, string prefix, int depth, HashSet<string> open, List<Candidate> into)
+        {
+            switch (structure)
+            {
+                case SDTLevel level when !level.IsCollection:
+                    foreach (IStructureItem item in level.Items)
+                    {
+                        if (into.Count >= MaxCandidates)
+                            return;
+                        switch (item)
+                        {
+                            case SDTLevel child:
+                                AddMembers(model, child, prefix + child.Name + ".", depth, open, into);
+                                break;
+                            case SDTItem member:
+                                into.Add(new Candidate { Path = prefix + member.Name, Type = new TypeInfo(member) });
+                                if (member.IsCollection || !IsStructured(member.Type) || depth >= MaxMemberDepth)
+                                    break;
+                                IStructureItem inner = ResolveStructure(model, Properties.SDTITEM.GetDataType(member));
+                                if (inner != null && open.Add(Key(inner)))
+                                {
+                                    AddMembers(model, inner, prefix + member.Name + ".", depth + 1, open, into);
+                                    open.Remove(Key(inner));
+                                }
+                                break;
+                        }
+                    }
+                    break;
 
-            ApplyText(context, site, string.Join(", ", arguments), toUdp, prefix);
-            Log.Write($"completado {target.Name}: ({string.Join(", ", arguments)}) salida={(returned == null ? "-" : prefix.Length > 0 ? prefix.Trim() : "asignada/expresión")}");
-            Status(Summary(target, parameters.Count, declared, different, undeclared));
+                case TransactionLevel level:
+                    foreach (TransactionAttribute attribute in level.Attributes)
+                        if (attribute.Attribute != null && into.Count < MaxCandidates)
+                            into.Add(new Candidate { Path = prefix + attribute.Name, Type = new TypeInfo(attribute.Attribute) });
+                    break;
+            }
+        }
+
+        static bool IsStructured(eDBType type) =>
+            type == eDBType.GX_SDT || type == eDBType.GX_BUSCOMP || type == eDBType.GX_BUSCOMP_LEVEL;
+
+        /// <summary>
+        /// El nivel del SDT o de la transacción al que apunta el tipo (como lo resuelve GeneXus): la raíz
+        /// para un SDT o un BC, el nivel para "Sdt.Item" o "Trn.Nivel".
+        /// </summary>
+        static IStructureItem ResolveStructure(KBModel model, AttCustomType type)
+        {
+            try
+            {
+                StructureTypeReference reference = StructureTypeReference.Deserialize(type);
+                if (reference == null)
+                    return null;
+                bool isCollection = false;
+                eDBType infoType = eDBType.NONE;
+                IStructureItem item = StructureInfoProvider.GetItem(model, reference, ref isCollection, ref infoType);
+                return item is SDTLevel || item is TransactionLevel ? item : null;
+            }
+            catch (Exception ex)
+            {
+                Log.Write($"resolver {type}: {ex.Message}");
+                return null;
+            }
+        }
+
+        /// <summary>Identifica una estructura para cortar ciclos.</summary>
+        static string Key(IStructureItem structure)
+        {
+            switch (structure)
+            {
+                case SDTLevel level:
+                    return "S" + level.ItemEntity.Type + ":" + level.ItemEntity.Id;
+                case TransactionLevel level:
+                    return "T" + level.Transaction.Id + ":" + level.Id;
+                default:
+                    return structure.GetType().Name + ":" + structure.Name;
+            }
         }
 
         /// <summary>Inserta los argumentos, cambia call por udp y agrega "&amp;Salida = " como un solo deshacer.</summary>
-        static void ApplyText(Context context, CallSite site, string arguments, bool toUdp, string prefix)
+        static void ApplyText(Context context, CallSite site, string arguments, bool toUdp, string prefix, int caretInArguments)
         {
             Document document = context.SyntaxEditor.Document;
             string inside = arguments + (site.HasClose ? string.Empty : ")");
-            int caret = site.ArgsOffset + inside.Length + (site.HasClose ? 1 : 0);
+            // En el lugar pedido de los argumentos, o después del ")"
+            int caret = site.ArgsOffset + (caretInArguments >= 0 ? caretInArguments : arguments.Length + 1);
 
             s_Applying = true;
             document.UndoRedo.StartGroup(DocumentModificationType.Custom);
@@ -345,7 +654,6 @@ namespace GxCallParms
             {
                 // De derecha a izquierda, así los offsets de lo anterior siguen valiendo
                 Replace(document, site.ArgsOffset, site.ArgsLength, inside);
-                caret -= site.ArgsLength;
                 if (toUdp)
                 {
                     Replace(document, site.MethodOffset, site.MethodLength, UdpMethod);
@@ -477,7 +785,7 @@ namespace GxCallParms
         {
             Variable existing = part.GetVariable(name);
             if (existing != null && !existing.IsAutoDefined)
-                return source == null || SameType(existing, source) ? Declaration.Existing : Declaration.Different;
+                return source == null || SameTypeOrUnknown(existing, source) ? Declaration.Existing : Declaration.Different;
             if (existing == null && (VariableDefinition.IsStandard(name) || VariableDefinition.IsNewStandard(part, name)))
                 return Declaration.Existing;   // &Pgmname, &Today...: GeneXus les pone su tipo fijo
             if (source == null)
@@ -537,30 +845,111 @@ namespace GxCallParms
             return IsBasedOnIt();
         }
 
-        static bool SameType(Variable existing, ITypedObject source)
+        /// <summary>
+        /// El tipo de una variable, un miembro de SDT o un atributo, para compararlo con el del parámetro. Cada
+        /// dato se calcula una sola vez y solo si hace falta (leer el dominio o el SDT puede cargar objetos).
+        /// </summary>
+        sealed class TypeInfo
+        {
+            public readonly ITypedObject Typed;
+            readonly Lazy<int?> m_DomainId;
+            readonly Lazy<int?> m_AttributeId;
+            readonly Lazy<string> m_Structure;
+            readonly Lazy<string> m_DataType;
+
+            public TypeInfo(ITypedObject typed)
+            {
+                Typed = typed;
+                m_DomainId = new Lazy<int?>(() => DomainOf(typed)?.Id);
+                m_AttributeId = new Lazy<int?>(() => AttributeOf(typed)?.Id);
+                m_Structure = new Lazy<string>(() => StructureKey(CustomType(typed)));
+                m_DataType = new Lazy<string>(() => new DataType(typed).ToString());
+            }
+
+            /// <summary>
+            /// Si es del tipo de <paramref name="source"/> (el parámetro): el mismo dominio, el mismo atributo, el
+            /// mismo SDT / BC o el mismo tipo básico, y los dos colección o ninguno.
+            /// </summary>
+            public bool SameAs(TypeInfo source)
+            {
+                if (source.Typed is Domain domain)
+                    return m_DomainId.Value == domain.Id;
+                if (Typed.IsCollection != source.Typed.IsCollection)
+                    return false;
+                if (IsStructured(Typed.Type) || IsStructured(source.Typed.Type))
+                    return m_Structure.Value != null && m_Structure.Value == source.m_Structure.Value;
+                if (source.m_AttributeId.Value != null && m_AttributeId.Value == source.m_AttributeId.Value)
+                    return true;
+                return m_DataType.Value == source.m_DataType.Value;
+            }
+
+            /// <summary>Para ofrecer una opción: si no se puede comparar, no se ofrece.</summary>
+            public bool Matches(TypeInfo source)
+            {
+                try
+                {
+                    return SameAs(source);
+                }
+                catch (Exception)
+                {
+                    return false;
+                }
+            }
+
+            /// <summary>
+            /// El SDT / BC (o el nivel) al que apunta el tipo, igual aunque las referencias se hayan armado
+            /// distinto; null si no se puede leer.
+            /// </summary>
+            static string StructureKey(AttCustomType type)
+            {
+                if (type == null)
+                    return null;
+                StructureTypeReference reference = StructureTypeReference.Deserialize(type);
+                return reference == null ? null : $"{type.DataType}:{reference.Type}:{reference.Id}:{reference.AdditionalInfo}";
+            }
+        }
+
+        /// <summary>Para avisar que una variable ya existía con otro tipo: si no se puede comparar, no avisar.</summary>
+        static bool SameTypeOrUnknown(ITypedObject candidate, ITypedObject source)
         {
             try
             {
-                switch (source)
-                {
-                    case Attribute attribute:
-                        if (existing.AttributeBasedOn?.Id == attribute.Id)
-                            return true;
-                        return !existing.IsCollection && new DataType(existing).ToString() == new DataType(attribute).ToString();
-                    case Domain domain:
-                        return existing.DomainBasedOn?.Id == domain.Id;
-                    case Variable variable:
-                        if (variable.AttributeBasedOn != null)
-                            return existing.AttributeBasedOn?.Id == variable.AttributeBasedOn.Id
-                                || (existing.IsCollection == variable.IsCollection && new DataType(existing).ToString() == new DataType(variable).ToString());
-                        return existing.IsCollection == variable.IsCollection && new DataType(existing).ToString() == new DataType(variable).ToString();
-                    default:
-                        return true;
-                }
+                return new TypeInfo(candidate).SameAs(new TypeInfo(source));
             }
             catch (Exception)
             {
-                return true;   // si no se puede comparar, no avisar
+                return true;
+            }
+        }
+
+        static Attribute AttributeOf(ITypedObject typed) => typed as Attribute ?? (typed as IAttributeTypedObject)?.AttributeBasedOn;
+
+        static Domain DomainOf(ITypedObject typed) => typed is Attribute attribute
+            ? attribute.DomainBasedOn
+            : (typed as IDomainTypedObject)?.DomainBasedOn ?? AttributeOf(typed)?.DomainBasedOn;
+
+        static AttCustomType CustomType(ITypedObject typed)
+        {
+            switch (typed)
+            {
+                case SDTItem item: return Properties.SDTITEM.GetDataType(item);
+                case IPropertyBag bag: return Properties.ATT.GetDataType(bag);
+                default: return null;
+            }
+        }
+
+        /// <summary>"Attribute:CliId", "sdtCliente, Ventas collection", "VarChar(100)"...</summary>
+        static string TypeText(ITypedObject typed)
+        {
+            try
+            {
+                Attribute attribute = AttributeOf(typed);
+                string text = attribute != null ? "Attribute:" + attribute.Name : new DataType(typed).ToString();
+                return typed.IsCollection ? text + " collection" : text;
+            }
+            catch (Exception)
+            {
+                return string.Empty;
             }
         }
 
@@ -576,19 +965,19 @@ namespace GxCallParms
             }
         }
 
-        static string Summary(KBObject target, int parameterCount, List<string> declared, List<string> different, List<string> undeclared)
+        static string Summary(KBObject target, int parameterCount, Declarations declarations)
         {
             var parts = new List<string>
             {
                 parameterCount == 0 ? $"{target.Name} no tiene parámetros"
                     : parameterCount == 1 ? $"{target.Name}: 1 parámetro" : $"{target.Name}: {parameterCount} parámetros",
             };
-            if (declared.Count > 0)
-                parts.Add("declaradas " + Names(declared));
-            if (different.Count > 0)
-                parts.Add("ya existían con otro tipo " + Names(different));
-            if (undeclared.Count > 0)
-                parts.Add("sin tipo para declarar " + Names(undeclared));
+            if (declarations.Declared.Count > 0)
+                parts.Add("declaradas " + Names(declarations.Declared));
+            if (declarations.Different.Count > 0)
+                parts.Add("ya existían con otro tipo " + Names(declarations.Different));
+            if (declarations.Undeclared.Count > 0)
+                parts.Add("sin tipo para declarar " + Names(declarations.Undeclared));
             return "GxCallParms: " + string.Join(" · ", parts);
         }
 

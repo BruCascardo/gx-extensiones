@@ -26,7 +26,7 @@ jobs:
         run: .\scripts\Verificar.ps1
 
   pruebas:
-    name: Pruebas de GxSdtJson
+    name: Pruebas de GxSdtJson y GxCodeCheck
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -34,6 +34,7 @@ jobs:
         with:
           dotnet-version: 8.0.x
       - run: dotnet run --project tests/GxSdtJson.Tests -c Release
+      - run: dotnet run --project tests/GxCodeCheck.Tests -c Release
 
   scripts:
     name: Scripts e instalador

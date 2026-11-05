@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Pruebas del análisis de errores de GxCodeCheck (lo que no depende de GeneXus), sin GeneXus: dotnet run.
+       Los mensajes de entrada son los que da el parser de GeneXus 18 U15 en cada caso.
+       Corren también en GitHub Actions, donde no hay GeneXus instalado. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net471</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\..\src\GxCodeCheck\Diagnostic.cs" Link="Diagnostic.cs" />
+    <Compile Include="..\..\src\GxCodeCheck\Fix.cs" Link="Fix.cs" />
+    <Compile Include="..\..\src\GxCodeCheck\SourceText.cs" Link="SourceText.cs" />
+    <Compile Include="..\..\src\GxCodeCheck\TextChecks.cs" Link="TextChecks.cs" />
+    <Compile Include="..\..\src\GxCodeCheck\BlockChecks.cs" Link="BlockChecks.cs" />
+    <Compile Include="..\..\src\GxCodeCheck\Explainer.cs" Link="Explainer.cs" />
+    <Compile Include="..\..\src\GxCodeCheck\Analyzer.cs" Link="Analyzer.cs" />
+    <Compile Include="..\..\src\GxCodeCheck\TypeInfo.cs" Link="TypeInfo.cs" />
+    <Compile Include="..\..\src\GxCodeCheck\TypeChecker.cs" Link="TypeChecker.cs" />
+    <Compile Include="..\..\src\GxCodeCheck\StandardChecks.cs" Link="StandardChecks.cs" />
+  </ItemGroup>
+</Project>

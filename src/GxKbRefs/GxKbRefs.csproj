@@ -1,0 +1,33 @@
+<Project Sdk="GeneXus.Package.UI.Sdk">
+  <PropertyGroup>
+    <RootNamespace>GxKbRefs</RootNamespace>
+    <AssemblyName>GxKbRefs</AssemblyName>
+    <AssemblyTitle>GxKbRefs</AssemblyTitle>
+    <Description>En la ventana References, checkbox "Otras KBs" que agrega quién referencia al objeto en las demás KBs, agrupado por KB y con las flechas para seguir expandiendo</Description>
+    <Version>1.0.3</Version>
+    <FileVersion>$(Version).0</FileVersion>
+  </PropertyGroup>
+
+  <!-- La ventana References (CallBrowserControl) está en Artech.Core.UI y sus árboles son UltraTree de
+       Infragistics. Estos ensamblados no están en el feed NuGet de GeneXus: se referencian desde la
+       instalación local, sin copiarlos (los provee el IDE en runtime). -->
+  <ItemGroup>
+    <Reference Include="Artech.Core.UI">
+      <HintPath>$(GX_PROGRAM_DIR)\Artech.Core.UI.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Infragistics2.Win.UltraWinTree.v11.1">
+      <HintPath>$(GX_PROGRAM_DIR)\Infragistics2.Win.UltraWinTree.v11.1.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Infragistics2.Win.v11.1">
+      <HintPath>$(GX_PROGRAM_DIR)\Infragistics2.Win.v11.1.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Infragistics2.Shared.v11.1">
+      <HintPath>$(GX_PROGRAM_DIR)\Infragistics2.Shared.v11.1.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="System.Data" />
+  </ItemGroup>
+</Project>
