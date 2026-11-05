@@ -99,46 +99,14 @@ namespace GxQuickOpen
             }
         }
 
-        // Propiedad "Type" del Web Panel (Properties.WBP.Type) y sus valores (Properties.WBP.Type_Values)
-        const string WebPanelTypeProperty = "WEB_COMP";
-        const string ComponentValue = "Yes";
-        const string MasterPageValue = "Master";
-
-        /// <summary>
-        /// Guid → variante (componente / master page) de los Web Panels que no son páginas comunes, o
-        /// null si no se pudo consultar. Se busca por valor de propiedad, sin abrir cada Web Panel.
-        /// </summary>
-        static Dictionary<Guid, bool> WebPanelVariants(KBModel model)
-        {
-            try
-            {
-                var started = DateTime.Now;
-                var variants = new Dictionary<Guid, bool>();
-                foreach (KBObject obj in model.Objects.GetByPropertyValue(WebPanelTypeProperty, ComponentValue))
-                    if (obj != null)
-                        variants[obj.Guid] = true;
-                foreach (KBObject obj in model.Objects.GetByPropertyValue(WebPanelTypeProperty, MasterPageValue))
-                    if (obj != null)
-                        variants[obj.Guid] = false;
-                Diag.Log($"web panels: {variants.Count(v => v.Value)} componentes, {variants.Count(v => !v.Value)} master pages ({(DateTime.Now - started).TotalMilliseconds:N0} ms)");
-                // Toda KB tiene al menos una master page: si no encontró nada, la consulta no sirvió
-                return variants.Count > 0 ? variants : null;
-            }
-            catch (Exception ex)
-            {
-                Diag.Log("web panels: no se pudo saber cuáles son componentes: " + ex.Message);
-                return null;
-            }
-        }
-
         static IndexSnapshot Build(KBModel model, int version)
         {
             IObjectsService objects = UIServices.Objects;
+            // Por tipo y descriptor: los objetos de un mismo tipo pueden tener descriptores derivados con
+            // su propio nombre e ícono (Web Panel → Web Component, Master Page).
             // null = tipo que no se abre en un editor (igual que el filtro del Ctrl+O original)
-            var types = new Dictionary<Guid, TypeInfo>();
+            var types = new Dictionary<(Guid, string), TypeInfo>();
             var entries = new List<ObjectEntry>();
-            Dictionary<Guid, bool> webPanelVariants = WebPanelVariants(model);
-            TypeInfo webComponent = null, masterPage = null;
 
             foreach (IKBObject obj in objects.Cache.GetAll(model))
             {
@@ -146,28 +114,15 @@ namespace GxQuickOpen
                 {
                     if (obj == null)
                         continue;
-                    if (!types.TryGetValue(obj.Type, out TypeInfo type))
+                    KBObjectDescriptor descriptor = obj.TypeDescriptor;
+                    var key = (obj.Type, descriptor?.Name);
+                    if (!types.TryGetValue(key, out TypeInfo type))
                     {
-                        type = objects.IsDescriptorSupported(obj.Type) ? MakeType(obj.TypeDescriptor) : null;
-                        types[obj.Type] = type;
-                        if (type != null && obj.TypeDescriptor.Name == TypeInfo.WebPanelInternalName)
-                        {
-                            if (webPanelVariants == null)
-                            {
-                                type.AddWebPanelFallbackAliases();
-                            }
-                            else
-                            {
-                                webComponent = type.WebComponentVariant();
-                                masterPage = type.MasterPageVariant();
-                            }
-                        }
+                        type = objects.IsDescriptorSupported(obj.Type) ? MakeType(descriptor) : null;
+                        types[key] = type;
                     }
                     if (type == null)
                         continue;
-                    if (webPanelVariants != null && webPanelVariants.TryGetValue(obj.Guid, out bool component)
-                        && obj.TypeDescriptor.Name == TypeInfo.WebPanelInternalName)
-                        type = component ? webComponent : masterPage;
 
                     entries.Add(new ObjectEntry
                     {
@@ -190,13 +145,16 @@ namespace GxQuickOpen
 
         static TypeInfo MakeType(KBObjectDescriptor descriptor)
         {
-            if (descriptor == null || !UIServices.DocumentManager.IsOpenable(descriptor))
+            if (descriptor == null)
+                return null;
+            KBObjectDescriptor baseDescriptor = (descriptor as KBObjectDerivedDescriptor)?.BaseDescriptor;
+            if (!UIServices.DocumentManager.IsOpenable(descriptor) && (baseDescriptor == null || !UIServices.DocumentManager.IsOpenable(baseDescriptor)))
                 return null;
             return new TypeInfo
             {
                 Id = descriptor.Id,
                 Name = descriptor.Description ?? descriptor.Name,
-                Aliases = TypeInfo.BuildAliases(descriptor.Name, descriptor.Description),
+                Aliases = TypeInfo.BuildAliases(descriptor.Name, descriptor.Description, baseDescriptor?.Name),
                 Descriptor = descriptor,
             };
         }

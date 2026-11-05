@@ -14,12 +14,15 @@
   .\deploy.ps1
   .\deploy.ps1 -GxProgramDir 'D:\GeneXus\GX18U15'
   .\deploy.ps1 -Uninstall
+  .\deploy.ps1 -NoRegistrar     # solo copia el DLL; después hay que correr GeneXus.exe /install
 #>
 param(
     [string]$GxProgramDir,
     [switch]$Uninstall,
     # Instalar aunque el upgrade de GeneXus no sea el de compilación (U15)
-    [switch]$Force
+    [switch]$Force,
+    # Solo copiar el DLL, sin ejecutar "GeneXus.exe /install": InstalarPackages registra todos juntos al final
+    [switch]$NoRegistrar
 )
 $ErrorActionPreference = 'Stop'
 
@@ -89,6 +92,7 @@ catch [System.UnauthorizedAccessException] {
     throw "Sin permiso para escribir en $packages. Abrí PowerShell como administrador y volvé a correr el script."
 }
 
+if ($NoRegistrar) { return }
 Write-Host 'Registrando packages (GeneXus.exe /install)...'
 Start-Process $gxExe -ArgumentList '/install' -Wait
 Write-Host 'Listo. Abrí GeneXus normalmente. Los atajos se configuran en Tools > Options > GxQuickOpen.'

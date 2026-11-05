@@ -5,10 +5,10 @@ using System.Windows.Forms;
 namespace GxQuickVar
 {
     /// <summary>
-    /// Atajos configurables dentro de los editores de código. No se declaran en el manifiesto
-    /// porque ahí son fijos (y el enum Shortcut de WinForms no admite Alt+letra): se interceptan
-    /// los mensajes de teclado antes de que lleguen al editor o al menú, solo si el foco está en
-    /// un editor de código editable.
+    /// Atajos configurables. No se declaran en el manifiesto porque ahí son fijos (y el enum Shortcut
+    /// de WinForms no admite Alt+letra): se interceptan los mensajes de teclado antes de que lleguen
+    /// al control o al menú, solo si el atajo tiene algo que hacer donde está el foco (un editor de
+    /// código editable, la grilla de variables...); si no, la tecla sigue su camino.
     /// </summary>
     sealed class KeyBindingFilter : IMessageFilter
     {
@@ -22,7 +22,8 @@ namespace GxQuickVar
         sealed class Binding
         {
             public Func<Keys> Keys;
-            public Action Action;
+            /// <summary>Qué hacer con el foco en ese control, o null si ahí el atajo no aplica.</summary>
+            public Func<Control, Action> Resolve;
         }
 
         readonly List<Binding> m_Bindings = new List<Binding>();
@@ -33,9 +34,9 @@ namespace GxQuickVar
         Keys m_SwallowKey;
         bool m_SwallowAlt;
 
-        public void Add(Func<Keys> keys, Action action)
+        public void Add(Func<Keys> keys, Func<Control, Action> resolve)
         {
-            m_Bindings.Add(new Binding { Keys = keys, Action = action });
+            m_Bindings.Add(new Binding { Keys = keys, Resolve = resolve });
         }
 
         public bool PreFilterMessage(ref Message m)
@@ -80,17 +81,32 @@ namespace GxQuickVar
                 if (bound == Keys.None || bound != combo)
                     continue;
 
-                var editor = EditorLocator.FromFocus();
-                if (editor == null || editor.ReadOnly)
-                    return false;
+                Control focused = EditorLocator.FocusedControl();
+                Action action = focused != null ? Resolve(binding, focused) : null;
+                if (action == null)
+                    continue;
 
                 m_SwallowKey = key;
                 m_SwallowAlt = (combo & Keys.Alt) != 0;
-                // Diferido: que termine el procesamiento de la tecla antes de abrir el popup
-                editor.BeginInvoke(binding.Action);
+                // Diferido: que termine el procesamiento de la tecla antes de abrir el popup. En la ventana
+                // principal, que sigue viva aunque el control con el foco se cierre en el medio.
+                (focused.TopLevelControl ?? focused).BeginInvoke(action);
                 return true;
             }
             return false;
+        }
+
+        /// <summary>Un error al decidir no puede romper el teclado de GeneXus: la tecla sigue su camino.</summary>
+        static Action Resolve(Binding binding, Control focused)
+        {
+            try
+            {
+                return binding.Resolve(focused);
+            }
+            catch (Exception)
+            {
+                return null;
+            }
         }
 
         static Keys KeyOf(Message m) => (Keys)((int)(long)m.WParam & 0xFFFF);

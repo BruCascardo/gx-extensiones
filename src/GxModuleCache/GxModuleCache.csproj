@@ -1,0 +1,10 @@
+<Project Sdk="GeneXus.Package.UI.Sdk">
+  <PropertyGroup>
+    <RootNamespace>GxModuleCache</RootNamespace>
+    <AssemblyName>GxModuleCache</AssemblyName>
+    <AssemblyTitle>GxModuleCache</AssemblyTitle>
+    <Description>Botón "Limpiar caché" en Manage Module References: borra la caché local de NuGet (nuget locals all -clear) y vuelve a cargar la lista de módulos</Description>
+    <Version>1.0.1</Version>
+    <FileVersion>$(Version).0</FileVersion>
+  </PropertyGroup>
+</Project>

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Package xmlns="http://schemas.genexus.com/addin/v1.0" id="3A0027E9-87B4-42FF-B450-6CC3F72C47DE" name="GxEnumValues">
+  <Resources>
+    <Resource type="strings" name="GxEnumValues.Messages" />
+  </Resources>
+
+  <!-- Sin comandos de edición: el diálogo Enum Values lo detecta DialogHook -->
+  <Commands>
+    <CommandDefinition id="GxEnumValuesOptions" resourceId="CmdOptions" />
+  </Commands>
+
+  <Groups>
+    <Group id="GxEnumValuesToolsGroup">
+      <Command refid="GxEnumValuesOptions" />
+    </Group>
+  </Groups>
+
+  <Menus>
+    <Menu type="menubar">
+      <Popup name="Tools" refid="ToolsMenu">
+        <Group refid="GxEnumValuesToolsGroup" />
+      </Popup>
+    </Menu>
+  </Menus>
+</Package>

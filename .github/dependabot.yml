@@ -1,0 +1,20 @@
+# Avisa con un PR cuando hay versiones nuevas de las acciones de los workflows y de MkDocs.
+# NuGet queda afuera a propósito: las versiones de GeneXus (global.json, Directory.Build.props) y
+# Newtonsoft.Json de las pruebas tienen que ser las de GeneXus 18 U15.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      acciones:
+        patterns: ["*"]
+
+  - package-ecosystem: pip
+    directory: /docs
+    schedule:
+      interval: monthly
+    groups:
+      mkdocs:
+        patterns: ["*"]

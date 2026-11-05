@@ -8,12 +8,17 @@ body:
       label: Extensión
       options:
         - GxCallParms
+        - GxCodeCheck
         - GxCodeKeys
+        - GxEnumValues
+        - GxKbRefs
+        - GxModuleCache
         - GxOpenWeb
         - GxQuickOpen
         - GxQuickVar
         - GxSdtExpand
         - GxSdtJson
+        - GxTabScroll
         - Instalador
         - Otra / no sé
     validations:

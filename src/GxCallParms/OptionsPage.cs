@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.Drawing;
+using System.Linq;
 using System.Windows.Forms;
 using Artech.Architecture.UI.Framework.Services;
 
@@ -35,6 +37,9 @@ namespace GxCallParms
         readonly Label m_Warning = new Label();
         readonly CheckBox m_AutoFill = new CheckBox();
         readonly CheckBox m_CallToUdp = new CheckBox();
+        readonly CheckBox m_AskEach = new CheckBox();
+        readonly TextBox m_Presets = new TextBox();
+        readonly Label m_PresetsWarning = new Label();
         readonly CheckBox m_Log = new CheckBox();
         IParentDesigner m_Parent;
         bool m_Loading;
@@ -58,6 +63,33 @@ namespace GxCallParms
             AddTitle(layout, "Completar llamadas");
             AddCheck(layout, m_AutoFill, "Completar los parámetros al escribir el \"(\" de Objeto(, Objeto.call( u Objeto.udp(");
             AddCheck(layout, m_CallToUdp, "Con un único parámetro de salida (el último), escribir .call( como &&Salida = Objeto.udp(...)");
+            AddCheck(layout, m_AskEach, "Sugerir qué pasar en cada parámetro mientras se escribe (si no, completa con los nombres de la regla parm)");
+
+            AddTitle(layout, "Valores predefinidos por objeto");
+            AddNote(layout, "Una línea por objeto: Objeto: lugar; lugar; ... (un lugar por parámetro, en orden). " +
+                            "\"?A | B\" sugiere A ya elegida en la lista (B queda como opción); un valor sin \"?\" se escribe solo; " +
+                            "vacío deja el lugar para escribirlo; \"*\" o no ponerlo es lo normal.");
+            m_Presets.Multiline = true;
+            m_Presets.ScrollBars = ScrollBars.Vertical;
+            m_Presets.AcceptsReturn = true;
+            m_Presets.WordWrap = false;
+            m_Presets.Font = new Font(FontFamily.GenericMonospace, 9f);
+            m_Presets.Size = new Size(560, 90);
+            layout.Controls.Add(m_Presets, 0, layout.RowCount);
+            layout.SetColumnSpan(m_Presets, 3);
+            layout.RowCount++;
+            var resetPresets = new LinkLabel { Text = "Restablecer (" + string.Join(" / ", Presets.Defaults) + ")", AutoSize = true, UseMnemonic = false, Margin = new Padding(3, 2, 3, 3) };
+            resetPresets.LinkClicked += (s, e) => m_Presets.Lines = Presets.Defaults;
+            layout.Controls.Add(resetPresets, 0, layout.RowCount);
+            layout.SetColumnSpan(resetPresets, 3);
+            layout.RowCount++;
+            m_PresetsWarning.AutoSize = true;
+            m_PresetsWarning.MaximumSize = new Size(560, 0);
+            m_PresetsWarning.ForeColor = Color.FromArgb(0xB2, 0x5E, 0x00);
+            m_PresetsWarning.Margin = new Padding(3, 2, 3, 8);
+            layout.Controls.Add(m_PresetsWarning, 0, layout.RowCount);
+            layout.SetColumnSpan(m_PresetsWarning, 3);
+            layout.RowCount++;
 
             AddTitle(layout, "Atajo de teclado");
             AddNote(layout, "Completa la llamada bajo el cursor si tiene los paréntesis vacíos. " +
@@ -80,6 +112,8 @@ namespace GxCallParms
             m_FillBox.KeysChanged += (s, e) => OnChanged();
             m_AutoFill.CheckedChanged += (s, e) => OnChanged();
             m_CallToUdp.CheckedChanged += (s, e) => OnChanged();
+            m_AskEach.CheckedChanged += (s, e) => OnChanged();
+            m_Presets.TextChanged += (s, e) => OnChanged();
             m_Log.CheckedChanged += (s, e) => OnChanged();
         }
 
@@ -90,6 +124,8 @@ namespace GxCallParms
             m_FillBox.Keys = Settings.FillKey;
             m_AutoFill.Checked = Settings.AutoFill;
             m_CallToUdp.Checked = Settings.CallToUdp;
+            m_AskEach.Checked = Settings.AskEachParameter;
+            m_Presets.Lines = Settings.Presets.ToArray();
             m_Log.Checked = Settings.LogEnabled;
             m_Loading = false;
             UpdateWarning();
@@ -100,6 +136,8 @@ namespace GxCallParms
             Settings.FillKey = m_FillBox.Keys;
             Settings.AutoFill = m_AutoFill.Checked;
             Settings.CallToUdp = m_CallToUdp.Checked;
+            Settings.AskEachParameter = m_AskEach.Checked;
+            Settings.Presets = PresetLines().ToList();
             Settings.LogEnabled = m_Log.Checked;
             Settings.Save();
             return true;
@@ -114,8 +152,17 @@ namespace GxCallParms
                 m_Parent.Dirty = true;
         }
 
+        IEnumerable<string> PresetLines() => m_Presets.Lines.Select(l => l.Trim()).Where(l => l.Length > 0);
+
         void UpdateWarning()
         {
+            var invalid = PresetLines()
+                .Select(line => Presets.TryParse(line, out _, out _, out string error) ? null : $"\"{line}\": {error}")
+                .Where(e => e != null)
+                .ToList();
+            m_PresetsWarning.Text = invalid.Count > 0 ? "Se ignoran: " + string.Join("; ", invalid) : string.Empty;
+            m_PresetsWarning.Visible = invalid.Count > 0;
+
             Keys fill = m_FillBox.Keys;
             string warning = Shortcuts.IsUsedByGeneXus(fill)
                 ? "GeneXus ya usa " + Shortcuts.Format(fill) + ". Dentro del editor de código va a ganar GxCallParms; en el resto del IDE sigue el de GeneXus."

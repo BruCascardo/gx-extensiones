@@ -3,8 +3,8 @@
     <RootNamespace>GxCallParms</RootNamespace>
     <AssemblyName>GxCallParms</AssemblyName>
     <AssemblyTitle>GxCallParms</AssemblyTitle>
-    <Description>Al escribir Objeto.call( u Objeto.udp( completa los parámetros y declara las variables con el tipo del objeto llamado</Description>
-    <Version>1.0.3</Version>
+    <Description>Al escribir Objeto.call( u Objeto.udp( sugiere qué pasar en cada parámetro, como el IntelliSense, y declara las variables nuevas con el tipo del objeto llamado</Description>
+    <Version>1.2.1</Version>
     <FileVersion>$(Version).0</FileVersion>
   </PropertyGroup>
 

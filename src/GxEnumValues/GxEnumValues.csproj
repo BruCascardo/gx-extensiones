@@ -1,0 +1,19 @@
+<Project Sdk="GeneXus.Package.UI.Sdk">
+  <PropertyGroup>
+    <RootNamespace>GxEnumValues</RootNamespace>
+    <AssemblyName>GxEnumValues</AssemblyName>
+    <AssemblyTitle>GxEnumValues</AssemblyTitle>
+    <Description>En el diálogo Enum Values de dominios y atributos: barra de búsqueda que filtra por nombre, descripción y valor, y clic en los encabezados para ordenar</Description>
+    <Version>1.0.2</Version>
+    <FileVersion>$(Version).0</FileVersion>
+  </PropertyGroup>
+
+  <!-- El diálogo (EnumValuesEditorControl) está en este package, que no está en el feed NuGet de
+       GeneXus: se referencia desde la instalación local, sin copiarlo (lo provee el IDE en runtime). -->
+  <ItemGroup>
+    <Reference Include="Artech.Packages.GenexusUI">
+      <HintPath>$(GX_PROGRAM_DIR)\Packages\Artech.Packages.GenexusUI.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+</Project>

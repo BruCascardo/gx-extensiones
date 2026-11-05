@@ -57,7 +57,8 @@ namespace GxQuickVar
             layout.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
 
             AddTitle(layout, "Atajos de teclado");
-            AddNote(layout, "Funcionan dentro de los editores de código (Events, Source, Rules, Conditions). " +
+            AddNote(layout, "Funcionan dentro de los editores de código (Events, Source, Rules, Conditions); el de " +
+                            "declarar también en la pestaña Variables, en los patterns y en Properties con una variable seleccionada. " +
                             "Hacé clic en el campo y apretá la combinación; Supr o Retroceso lo deja sin atajo.");
             AddShortcutRow(layout, "Declarar la variable bajo el cursor:", m_DeclareBox, Settings.DefaultDeclareKey);
             AddShortcutRow(layout, "Declarar todas las variables sin definir:", m_DeclareAllBox, Settings.DefaultDeclareAllKey);
@@ -134,7 +135,7 @@ namespace GxQuickVar
             else if (Shortcuts.IsUsedByGeneXus(declare) || Shortcuts.IsUsedByGeneXus(declareAll))
                 warning = "GeneXus ya usa " + string.Join(" y ", new[] { declare, declareAll }
                               .Where(Shortcuts.IsUsedByGeneXus).Select(Shortcuts.Format)) +
-                          ". Dentro del editor de código va a ganar GxQuickVar; en el resto del IDE sigue el de GeneXus.";
+                          ". Donde actúa GxQuickVar va a ganar GxQuickVar; en el resto del IDE sigue el de GeneXus.";
             m_Warning.Text = warning ?? string.Empty;
             m_Warning.Visible = warning != null;
         }

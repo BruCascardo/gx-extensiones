@@ -44,5 +44,12 @@
         <Command refid="GxQuickVarDeclare" />
       </Group>
     </Menu>
+
+    <!-- Menú contextual de la pestaña Variables (package de los editores de estructura) -->
+    <Menu type="context" id="VariableEditorContextMenu" package="96BEF989-5B7D-4126-8DD2-27163563A9A9">
+      <Group>
+        <Command refid="GxQuickVarDeclare" />
+      </Group>
+    </Menu>
   </Menus>
 </Package>

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Package xmlns="http://schemas.genexus.com/addin/v1.0" id="CEC6ED1B-174C-48A7-9161-E814A7F8B695" name="GxCodeCheck">
+  <Resources>
+    <Resource type="strings" name="GxCodeCheck.Messages" />
+    <Resource type="images" name="GxCodeCheck.Images" />
+  </Resources>
+
+  <!-- Los subrayados los agrega EditorSession a cada editor de código; en Tools, la revisión de muchos objetos y las opciones -->
+  <Commands>
+    <CommandDefinition id="GxCodeCheckReview" resourceId="CmdReview" image="Review" />
+    <CommandDefinition id="GxCodeCheckOptions" resourceId="CmdOptions" />
+  </Commands>
+
+  <Groups>
+    <Group id="GxCodeCheckToolsGroup">
+      <Command refid="GxCodeCheckReview" />
+      <Command refid="GxCodeCheckOptions" />
+    </Group>
+  </Groups>
+
+  <Menus>
+    <!-- Barra propia con el botón de la revisión, en la fila de la barra estándar -->
+    <Menu type="toolbar" id="GxCodeCheckToolbar" name="GxCodeCheck" visible="true" row="1">
+      <Group>
+        <Command refid="GxCodeCheckReview" />
+      </Group>
+    </Menu>
+
+    <Menu type="menubar">
+      <Popup name="Tools" refid="ToolsMenu">
+        <Group refid="GxCodeCheckToolsGroup" />
+      </Popup>
+    </Menu>
+  </Menus>
+</Package>

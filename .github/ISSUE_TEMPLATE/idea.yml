@@ -9,12 +9,17 @@ body:
       options:
         - Una extensión nueva
         - GxCallParms
+        - GxCodeCheck
         - GxCodeKeys
+        - GxEnumValues
+        - GxKbRefs
+        - GxModuleCache
         - GxOpenWeb
         - GxQuickOpen
         - GxQuickVar
         - GxSdtExpand
         - GxSdtJson
+        - GxTabScroll
         - Instalador
     validations:
       required: true

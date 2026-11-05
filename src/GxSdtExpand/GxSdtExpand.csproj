@@ -4,7 +4,7 @@
     <AssemblyName>GxSdtExpand</AssemblyName>
     <AssemblyTitle>GxSdtExpand</AssemblyTitle>
     <Description>Expande una &amp;variable SDT o Business Component en una asignación por cada miembro, con los = alineados; la expansión completa incluye colecciones y subestructuras</Description>
-    <Version>1.0.2</Version>
+    <Version>1.0.3</Version>
     <FileVersion>$(Version).0</FileVersion>
   </PropertyGroup>
 

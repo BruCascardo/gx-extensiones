@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Package xmlns="http://schemas.genexus.com/addin/v1.0" id="95204E25-EF94-4DDD-A0BD-9D207E679150" name="GxKbRefs">
+  <Resources>
+    <Resource type="strings" name="GxKbRefs.Messages" />
+  </Resources>
+
+  <!-- Sin comandos propios: el checkbox lo agrega ReferencesExtender a cada ventana References -->
+  <Commands>
+    <CommandDefinition id="GxKbRefsOptions" resourceId="CmdOptions" />
+  </Commands>
+
+  <Groups>
+    <Group id="GxKbRefsToolsGroup">
+      <Command refid="GxKbRefsOptions" />
+    </Group>
+  </Groups>
+
+  <Menus>
+    <Menu type="menubar">
+      <Popup name="Tools" refid="ToolsMenu">
+        <Group refid="GxKbRefsToolsGroup" />
+      </Popup>
+    </Menu>
+  </Menus>
+</Package>

@@ -4,7 +4,7 @@
     <AssemblyName>GxQuickOpen</AssemblyName>
     <AssemblyTitle>GxQuickOpen</AssemblyTitle>
     <Description>Reemplaza el diálogo Ctrl+O: búsqueda instantánea de objetos con el módulo a la vista y filtro de módulo escribible</Description>
-    <Version>1.2.1</Version>
+    <Version>1.2.4</Version>
     <FileVersion>$(Version).0</FileVersion>
   </PropertyGroup>
 

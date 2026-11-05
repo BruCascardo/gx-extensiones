@@ -39,6 +39,22 @@ namespace GxQuickVar
 
         public static bool HasParameters(string text) => text.IndexOf('(') >= 0;
 
+        // Los parámetros de un tipo básico: largo ("40", "2M"), largo y decimales ("10.2") y signo ("12.2-")
+        static readonly Regex ParametersRegex = new Regex(@"^\(\s*\d+\s*[KMG]?\s*(?:[.,]\s*\d+\s*)?-?\s*\)$",
+            RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+
+        /// <summary>
+        /// Si lo que va entre paréntesis ("VarChar(abc)") tiene la forma de un largo y decimales. GeneXus no
+        /// lo controla: con parámetros que no entiende deja el largo por defecto sin avisar.
+        /// </summary>
+        public static bool HasValidParameters(string text)
+        {
+            string type = text.Trim();
+            StripCollection(ref type);
+            int paren = type.IndexOf('(');
+            return paren < 0 || ParametersRegex.IsMatch(type.Substring(paren));
+        }
+
         // "att RecId", "att:RecId", "Attribute:RecId" (el nombre puede estar vacío mientras se escribe).
         // Mientras se busca puede tener varias palabras: "att cli nom" → ClienteNombre
         static readonly Regex AttributeRegex = new Regex(@"^(?:att|attribute)(?:\s+|\s*:\s*)(.*?)\s*$",

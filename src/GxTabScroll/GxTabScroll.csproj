@@ -1,0 +1,28 @@
+<Project Sdk="GeneXus.Package.UI.Sdk">
+  <PropertyGroup>
+    <RootNamespace>GxTabScroll</RootNamespace>
+    <AssemblyName>GxTabScroll</AssemblyName>
+    <AssemblyTitle>GxTabScroll</AssemblyTitle>
+    <Description>La rueda del mouse sobre las pestañas de objetos desplaza la barra cuando no entran todas, como en VS Code (Shift+rueda cambia de pestaña); Ctrl+W cierra la pestaña</Description>
+    <Version>1.0.3</Version>
+    <FileVersion>$(Version).0</FileVersion>
+  </PropertyGroup>
+
+  <!-- Las pestañas de objetos son un UltraTabbedMdiManager de Infragistics. Estos ensamblados no están
+       en el feed NuGet de GeneXus: se referencian desde la instalación local, sin copiarlos (los provee
+       el IDE en runtime). -->
+  <ItemGroup>
+    <Reference Include="Infragistics2.Win.UltraWinTabbedMdi.v11.1">
+      <HintPath>$(GX_PROGRAM_DIR)\Infragistics2.Win.UltraWinTabbedMdi.v11.1.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Infragistics2.Win.v11.1">
+      <HintPath>$(GX_PROGRAM_DIR)\Infragistics2.Win.v11.1.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Infragistics2.Shared.v11.1">
+      <HintPath>$(GX_PROGRAM_DIR)\Infragistics2.Shared.v11.1.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+</Project>
